@@ -12,15 +12,19 @@ WORKDIR /app
 COPY requirements.txt /app/
 
 # Install dependencies
-RUN pip install --upgrade pip
+RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
 # Copy the entire Django project to the container
 COPY . /app/
 
+# Collect static files
+RUN python manage.py collectstatic --noinput
+
+# Run database migrations
+RUN python manage.py migrate
 
 # Expose the port the app runs on
-#EXPOSE 8000
+EXPOSE 8000
 
-# Run the Django server
-#CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
-CMD ["gunicorn", "izr_server.wsgi:application","--bind","0.0.0.0:8000"]
+# Run the Django application with Gunicorn
+CMD ["gunicorn", "izr_server.wsgi:application", "--bind", "0.0.0.0:8000"]
