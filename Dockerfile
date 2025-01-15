@@ -1,5 +1,5 @@
 # Use the official Python image from Docker Hub
-FROM python:1-3.12-bullseye
+FROM python:3.12-bullseye
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
