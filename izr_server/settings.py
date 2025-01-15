@@ -25,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-n%1hm%k)$$pwxp6$@$ag)jms9nsdizh++kz_nr94qaxj-ye@8j"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = True if os.getenv("DEBUG") == "True" else False
 
 
 # Common settings for both DEBUG and non-DEBUG environments
@@ -110,14 +110,7 @@ WSGI_APPLICATION = "izr_server.wsgi.application"
 
 if not DEBUG:
     DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.mysql",
-            "NAME": os.environ.get("DB_NAME"),
-            "USER": os.environ.get("DB_USER"),
-            "PASSWORD": os.environ.get("DB_PASSWORD"),
-            "HOST": os.environ.get("DB_HOST"),
-            "PORT": os.environ.get("DB_PORT"),
-        }
+        "default": os.getenv("DATABASE_URL")
     }
 else:
     DATABASES = {
