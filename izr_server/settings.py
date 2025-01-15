@@ -13,6 +13,9 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from pathlib import Path
 from corsheaders.defaults import default_headers
+import environ
+
+env = environ.Env()
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -25,7 +28,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-n%1hm%k)$$pwxp6$@$ag)jms9nsdizh++kz_nr94qaxj-ye@8j"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True if os.getenv("DEBUG") == "True" else False
+DEBUG = env.bool('DEBUG', default=True)
 
 
 # Common settings for both DEBUG and non-DEBUG environments
@@ -110,7 +113,7 @@ WSGI_APPLICATION = "izr_server.wsgi.application"
 
 if not DEBUG:
     DATABASES = {
-        "default": os.getenv("DATABASE_URL")
+        'default': env.db('DATABASE_URL', default='mysql://django_user:django_password@localhost:3306/django_db')
     }
 else:
     DATABASES = {

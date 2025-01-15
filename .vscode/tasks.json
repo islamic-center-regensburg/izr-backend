@@ -2,18 +2,13 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Run MySql",
-            "command": "docker run --name mysql-container -e MYSQL_ROOT_PASSWORD=izr_123! -e MYSQL_DATABASE=izr_db -e MYSQL_USER=medaminbl -e MYSQL_PASSWORD=320897 -p 3306:3306 -d mysql:latest",
-            "type": "shell"
-        },
-        {
             "label": "Run Django",
-            "command": "myenv/bin/python3 manage.py runserver",
+            "command": "python3 manage.py runserver",
             "type": "shell"
         },
         {
             "label": "Freeze requirements",
-            "command": "myenv/bin/pip freeze > requirements.txt",
+            "command": "pip freeze > requirements.txt",
             "type": "shell"
         },
         {
@@ -24,18 +19,18 @@
         {
             "label": "Setup: Install Requirements",
             "type": "shell",
-            "command": "./myenv/bin/pip install -r requirements.txt", 
+            "command": "pip install -r requirements.txt", 
             "dependsOn": "Setup: Create Virtual Environment"
         },
         {
             "label": "Make Migrations",
             "type": "shell",
-            "command": "myenv/bin/python3 manage.py makemigrations",
+            "command": "python3 manage.py makemigrations",
         },
         {
             "label": "Migrate",
             "type": "shell",
-            "command": "myenv/bin/python3 manage.py migrate",
+            "command": "python3 manage.py migrate",
             "dependsOn": "Make Migrations"
         },
         
