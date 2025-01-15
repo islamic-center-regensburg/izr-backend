@@ -1,0 +1,8 @@
+__pycache__
+myenv
+*.db
+*.sqlite3
+*.sqlite
+*.sqlite3-journal
+migrations
+.DS_Store
