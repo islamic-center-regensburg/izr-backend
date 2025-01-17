@@ -4,5 +4,5 @@ myenv
 *.sqlite3
 *.sqlite
 *.sqlite3-journal
-migrations
+# migrations
 .DS_Store

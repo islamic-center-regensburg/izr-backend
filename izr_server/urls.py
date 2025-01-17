@@ -28,7 +28,6 @@ urlpatterns = (
         path("sarah/", include("izr_products.urls")),
         path("", include("izr_media.urls")),  # Add this line
         path("staff/", include("izr_staff.urls")),  # Add this line
-        path("sites/", include("izr_websites.urls")),  # Add this line
         # path("school/", include("izr_school.urls")),  # Add this line
     ]
     + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

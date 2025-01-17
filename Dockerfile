@@ -20,7 +20,6 @@ COPY . /app/
 # Collect static files
 RUN python3 manage.py collectstatic --noinput
 #
-RUN mv /app/IZRLOGOROUND.png /app/staticfiles/IZRLOGOROUND.png
 # Run database migrations
 RUN python3 manage.py migrate
 

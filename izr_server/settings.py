@@ -70,7 +70,6 @@ INSTALLED_APPS = [
     "izr_products",
     "izr_media",
     "izr_staff",
-    "izr_websites",
     "izr_school",
 ]
 
