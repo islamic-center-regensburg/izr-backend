@@ -39,16 +39,31 @@ class Token(models.Model):
         return f"Token for OS: {self.os}, test2: {self.test2}"
 
 
+from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.exceptions import ValidationError
+
 class PrayerCalculationConfig(models.Model):
-    calculation_angle = models.FloatField(
-        validators=[MinValueValidator(12), MaxValueValidator(18)]
-    )  # Angle for prayer calculation (e.g., Fajr or Isha angle)
+    isha_angle = models.FloatField(
+        validators=[MinValueValidator(12), MaxValueValidator(18)], default=0.0
+    )  # Angle for prayer calculation
+    fjar_angle = models.FloatField(
+        validators=[MinValueValidator(12), MaxValueValidator(18)], default=0.0
+    )  # Angle for prayer calculation
+    
+    jumaa_time = models.TimeField(
+        default="12:00"
+    )  # Time for Juma prayer
+    
+    tarawih_time = models.TimeField(
+        default="12:00"
+    )  # Time for Tarawih prayer
 
     default_longitude = models.FloatField(
-        default="12.102841"
+        default=12.102841
     )  # Default longitude value for prayer calculation
     default_latitude = models.FloatField(
-        default="49.007734"
+        default=49.007734
     )  # Default latitude value for prayer calculation
 
     def save(self, *args, **kwargs):
@@ -70,6 +85,7 @@ class PrayerCalculationConfig(models.Model):
     class Meta:
         verbose_name = "Prayer Calculation Configuration"
         verbose_name_plural = "Prayer Calculation Configuration"
+
 
 
 class PrayerConfig(models.Model):

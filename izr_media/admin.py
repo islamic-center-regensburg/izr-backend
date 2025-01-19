@@ -74,22 +74,31 @@ class PrayerConfigAdmin(admin.ModelAdmin):
 @admin.register(PrayerCalculationConfig)
 class PrayerCalculationConfigAdmin(admin.ModelAdmin):
     list_display = (
-        "calculation_angle",
+        "isha_angle",
+        "fjar_angle",
+        "jumaa_time",
+        "tarawih_time",
         "default_longitude",
         "default_latitude",
     )
     search_fields = (
-        "calculation_angle",
+        "isha_angle",
+        "fjar_angle",
+        "jumaa_time",
+        "tarawih_time",
         "default_longitude",
         "default_latitude",
     )  # Searchable fields
-    ordering = ("calculation_angle",)  # Default ordering
+    ordering = ("isha_angle",)  # Default ordering
     fieldsets = (
         (
             None,
             {
                 "fields": (
-                    "calculation_angle",
+                    "isha_angle",
+                    "fjar_angle",
+                    "jumaa_time",
+                    "tarawih_time",
                     "default_longitude",
                     "default_latitude",
                 )
