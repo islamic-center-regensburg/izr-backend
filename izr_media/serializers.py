@@ -56,9 +56,6 @@ class PrayerConfigSerializer(serializers.ModelSerializer):
             "isha",
             "jumaa",
             "maghrib",
-            "tarawih",
-            "day_correction",
-            "ramadan",
         ]
 
 
