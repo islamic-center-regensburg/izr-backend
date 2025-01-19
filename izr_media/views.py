@@ -37,7 +37,7 @@ from django.shortcuts import get_object_or_404
 
 
 from izr_media.calculation import (
-    run_calculations,
+    PrayerTimesCalculator,
 )  # Replace with the actual path of the function
 
 
@@ -104,82 +104,48 @@ class StatementView(generics.ListAPIView):
 @csrf_exempt
 def get_today_prayer_times(request):
     if request.method == "GET":
-        # Get today's date
-        today = datetime.now()
+        today = datetime.now().strftime("%Y-%m-%d")
 
-        # Prepare the start and end date as dictionaries
-        start_date = {"y": today.year, "m": today.month, "d": today.day}
-        end_date = {"y": today.year, "m": today.month, "d": today.day}
-
-        # Run the calculation for today's prayer times
         lat = PrayerCalculationConfig.objects.latest("id").default_latitude
         lng = PrayerCalculationConfig.objects.latest("id").default_longitude
 
-        prayer_times = run_calculations(
-            lat=lat,
-            lon=lng,
-            start_date=start_date,
-            end_date=end_date,
-        )
+        calculator = PrayerTimesCalculator(today, today, lng, lat)
+        prayer_times = calculator.get_prayer_times()
 
-        # Return the result as JSON
         response = JsonResponse(prayer_times[0], safe=False)
         response["Access-Control-Allow-Origin"] = "*"
-        return JsonResponse(prayer_times[0], safe=False)
+        return response
     else:
         return JsonResponse({"error": "Invalid request method"}, status=405)
-
 
 @csrf_exempt
 def get_prayer_times(request):
     if request.method == "POST":
         try:
-            # Parse the request body
             data = json.loads(request.body)
 
-            # Extract the parameters
             city_name = data.get("city_name", "Regensburg")
             lat = data.get("lat", None)
             lng = data.get("lng", None)
             start_date = data.get("start_date", None)
             end_date = data.get("end_date", None)
-            method = data.get("method", 10)  # Default method is 6
-            offset = data.get("offset", None)
+            method = data.get("method", 10)
+            if end_date and start_date:
+                start_date = f"{start_date["y"]}-{start_date["m"]}-{start_date["d"]}"
+                end_date = f"{end_date["y"]}-{end_date["m"]}-{end_date["d"]}"
 
-            # Default latitude and longitude for Regensburg
             if city_name.lower() == "regensburg":
-                lat = (
-                    PrayerCalculationConfig.objects.latest("id").default_latitude
-                    if lat is None
-                    else lat
-                )
-                lng = (
-                    PrayerCalculationConfig.objects.latest("id").default_longitude
-                    if lng is None
-                    else lng
-                )
+                lat = PrayerCalculationConfig.objects.latest("id").default_latitude if lat is None else lat
+                lng = PrayerCalculationConfig.objects.latest("id").default_longitude if lng is None else lng
 
-            # If latitude or longitude are not provided
             if lat is None or lng is None:
-                return JsonResponse(
-                    {"error": "Latitude and Longitude must be provided"}, status=400
-                )
+                return JsonResponse({"error": "Latitude and Longitude must be provided"}, status=400)
             if start_date is None or end_date is None:
-                return JsonResponse(
-                    {"error": "Latitude and Longitude must be provided"}, status=400
-                )
+                return JsonResponse({"error": "Start date and End date must be provided"}, status=400)
 
-            # Run the calculations
-            prayer_times = run_calculations(
-                lon=lng,
-                lat=lat,
-                start_date=start_date,
-                end_date=end_date,
-                method=method,
-                tzone="Europe/Berlin",  # Timezone can be dynamic based on the city, but set to Berlin as default
-            )
+            calculator = PrayerTimesCalculator(start_date, end_date, lng, lat, method)
+            prayer_times = calculator.get_prayer_times()
 
-            # Return the result as JSON
             return JsonResponse(prayer_times, safe=False)
 
         except KeyError as e:
@@ -189,7 +155,6 @@ def get_prayer_times(request):
 
     else:
         return JsonResponse({"error": "Invalid request method"}, status=405)
-
 
 class BlogDetailAPIView(generics.ListAPIView):
     queryset = Blog.objects.all()

@@ -53,9 +53,6 @@ class PrayerConfigAdmin(admin.ModelAdmin):
         "isha",
         "jumaa",
         "maghrib",
-        "tarawih",
-        "day_correction",
-        "ramadan",
     )
     list_editable = (
         "enabled",
@@ -65,33 +62,44 @@ class PrayerConfigAdmin(admin.ModelAdmin):
         "isha",
         "jumaa",
         "maghrib",
-        "tarawih",
-        "day_correction",
-        "ramadan",
     )
 
 
 @admin.register(PrayerCalculationConfig)
 class PrayerCalculationConfigAdmin(admin.ModelAdmin):
     list_display = (
-        "calculation_angle",
+        "isha_angle",
+        "fajr_angle",
+        "jumaa_time",
+        "tarawih_time",
         "default_longitude",
         "default_latitude",
+        "correction_day",
+        "ramadan",
     )
     search_fields = (
-        "calculation_angle",
+        "isha_angle",
+        "fajr_angle",
+        "jumaa_time",
+        "tarawih_time",
         "default_longitude",
         "default_latitude",
+        "correction_day",
+        "ramadan",
     )  # Searchable fields
-    ordering = ("calculation_angle",)  # Default ordering
+    ordering = ("isha_angle",)  # Default ordering
     fieldsets = (
         (
             None,
             {
                 "fields": (
-                    "calculation_angle",
+                    "isha_angle",
+                    "fajr_angle",
+                    "jumaa_time",
+                    "tarawih_time",
                     "default_longitude",
                     "default_latitude",
+                    "correction_day",
                 )
             },
         ),

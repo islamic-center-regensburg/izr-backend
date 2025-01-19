@@ -57,7 +57,8 @@ else:
 
 # Application definition
 
-INSTALLED_APPS = [
+# Core Django apps
+DJANGO_APPS = [
     "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -67,11 +68,18 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "corsheaders",
     "rest_framework",
-    "izr_products",
-    "izr_media",
-    "izr_staff",
-    "izr_school",
 ]
+
+# Optional izr_ apps based on environment variables
+OPTIONAL_APPS = [
+    "izr_products" if env.bool("USE_IZR_PRODUCTS", default=False) else None,
+    "izr_media" if env.bool("USE_IZR_MEDIA", default=False) else None,
+    "izr_staff" if env.bool("USE_IZR_STAFF", default=False) else None,
+    "izr_school" if env.bool("USE_IZR_SCHOOL", default=False) else None,
+]
+
+# Remove None values and combine app lists
+INSTALLED_APPS = DJANGO_APPS + [app for app in OPTIONAL_APPS if app]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -191,5 +199,5 @@ JAZZMIN_SETTINGS = {
     "search_model": ["auth.User", "auth.Group"],
     # Field name on user model that contains avatar ImageField/URLField/Charfield or a callable that receives the user
     "user_avatar": None,
-    "changeform_format": "horizontal_tabs",
+    "changeform_format": "collapsible",
 }
