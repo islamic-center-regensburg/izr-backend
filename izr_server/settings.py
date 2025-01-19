@@ -17,8 +17,12 @@ import environ
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-env = environ.Env()
-env.read_env(os.path.join(BASE_DIR, '.env'))
+env = environ.Env(
+    DEBUG=(bool, False)  # Define types and defaults
+)
+
+# Automatically fetch environment variables (already loaded by Docker)
+DEBUG = env.bool('DEBUG', default=False)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 
@@ -29,7 +33,6 @@ env.read_env(os.path.join(BASE_DIR, '.env'))
 SECRET_KEY = "django-insecure-n%1hm%k)$$pwxp6$@$ag)jms9nsdizh++kz_nr94qaxj-ye@8j"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env.bool('DEBUG', default=True)
 
 
 # Common settings for both DEBUG and non-DEBUG environments
