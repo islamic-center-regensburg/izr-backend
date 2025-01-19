@@ -1,9 +1,8 @@
-from datetime import date, timedelta
-import datetime
+from datetime import datetime, time,timedelta
 from pyIslam.praytimes import PrayerConf, Prayer, MethodInfo,LIST_FAJR_ISHA_METHODS,FixedTime
 from pyIslam.hijri import HijriDate
-import pytz
-import timezonefinder
+from pytz import timezone
+from timezonefinder import TimezoneFinder
 from izr_media.models import (
     PrayerConfig,
     PrayerCalculationConfig,
@@ -54,217 +53,72 @@ def fixed_init(
 # Override the original __init__ method with the fixed one
 PrayerConf.__init__ = fixed_init
 
+def round_time_to_minute(time):
+    """
+    Rounds time to the nearest minute: 
+    If seconds >= 30, round up, otherwise round down.
+    """
+    from datetime import datetime, timedelta
 
-hijri_en_to_ar = {
-    "Jumada al-Akhirah": "جمادى الآخرة",
-    "Rajab": "رجب",
-    "Sha’ban": "شعبان",
-    "Ramadhan": "رمضان",
-    "Dhu al-Qi’dah": "ذو القعدة",
-    "Dhu al-Hijjah": "ذو الحجة",
-    "Safar": "صفر",
-    "Rabi’ al-Awwal": "ربيع الأول",
-    "Rabi’ al-Thani": "ربيع الآخر",
-    "Jumada al-Ula": "جمادى الأولى",
-}
+    # Convert time to a datetime object
+    temp_datetime = datetime.combine(datetime.today(), time)
 
-
-def get_next_prayer(prayer_times, tz):
-    timezone = pytz.timezone(tz)
-    current_time = datetime.datetime.now(timezone).strftime("%H:%M")
-    # current_time = datetime.datetime(2024, 3, 31, 4, 53).strftime('%H:%M')
-    next_prayer = None
-    next_prayer_time = None
-    keys = ["Shuruq", "Datum", "Hijri", "Hijri_ar", "offset", "Ramadan"]
-    today = date.today()
-    if today.weekday() == 4:
-        keys.append("Dhuhr")
+    # Round the time
+    if temp_datetime.second >= 5:
+        rounded_time = (temp_datetime + timedelta(minutes=1)).replace(second=0, microsecond=0)
     else:
-        keys.append("Jumaa")
+        rounded_time = temp_datetime.replace(second=0, microsecond=0)
 
-    for prayer, time in prayer_times.items():
-        if prayer not in keys:
-            if time > current_time:
-                if next_prayer_time is None or time < next_prayer_time:
-                    next_prayer = prayer
-                    next_prayer_time = time
+    return rounded_time.time()
 
-    if next_prayer is None:
-        # If no next prayer found, then the next prayer is Fajr of the following day
-        next_prayer = "Fajr"
-        next_prayer_time = prayer_times["Fajr"]
+class PrayerTimesCalculator:
+    def __init__(self, start_date, end_date, longitude, latitude, method=10):
+        self.start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+        self.end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
+        self.longitude = longitude
+        self.latitude = latitude
+        self.tz_finder = TimezoneFinder()
+        self.method = method
 
-    return next_prayer, next_prayer_time
+    def get_prayer_times(self):
+        prayer_times_list = []
+        config = PrayerConfig.objects.first()
+        calc_config = PrayerCalculationConfig.objects.first()
 
-
-def getOffset(date, lat, lon):
-    tf = timezonefinder.TimezoneFinder()
-    tz_str = tf.certain_timezone_at(lat=lat, lng=lon)
-    tz = pytz.timezone(tz_str)
-    # Ensure the time is set to noon to avoid ambiguity at DST transitions
-    localized_date = tz.localize(
-        datetime.datetime.combine(date, datetime.time(12, 0, 0)), is_dst=None
-    )
-    offset_seconds = localized_date.utcoffset().total_seconds()
-    offset_hours = offset_seconds / 3600
-    return round(offset_hours, 1)
-
-
-def getOffset_DE(date, tzone="Europe/Berlin"):
-    tz = pytz.timezone(tzone)
-    # Ensure the time is set to noon to avoid ambiguity at DST transitions
-    localized_date = tz.localize(
-        datetime.datetime.combine(date, datetime.time(12, 0, 0)), is_dst=None
-    )
-    offset_seconds = localized_date.utcoffset().total_seconds()
-    offset_hours = offset_seconds / 3600
-    return float(offset_hours)
-
-
-def run_calculations(
-    lon=12.102841,
-    lat=49.007734,
-    start_date=None,
-    end_date=None,
-    method=10,
-    tzone="Europe/Berlin",
-):
-
-    tz = pytz.timezone(tzone)
-    data = []
-    today = datetime.datetime.now(tz)
-
-    first = datetime.datetime(today.year, today.month, today.day, 12, 0, 0, tzinfo=tz)
-    last = datetime.datetime(today.year, today.month, today.day, 12, 0, 0, tzinfo=tz)
-    if end_date == {"y": 2024, "m": 5, "d": 25}:
-        print(lon, lat, method, tzone)
-    if tzone != "Europe/Berlin":
-        print("today there:", first)
-        print(lon, lat, method, tzone)
-
-    if start_date != None:
-        first = datetime.datetime(
-            start_date["y"], start_date["m"], start_date["d"], 12, 0, 0, tzinfo=tz
-        )
-        last = datetime.datetime(
-            end_date["y"], end_date["m"], end_date["d"], 12, 0, 0, tzinfo=tz
-        )
-
-    try:
-        prayer_config = PrayerConfig.objects.latest(
-            "id"
-        )  # Get the latest config by ID or another field
-    except PrayerConfig.DoesNotExist:
-        prayer_config = None
-
-    correction_value = prayer_config.day_correction
-    current_date = first
-    print("offset : ", getOffset_DE(current_date, tzone))
-    while current_date <= last:
-        hijri = HijriDate.get_hijri(current_date, correction_val=correction_value)
-        dt = int()
-        dt = getOffset_DE(current_date, tzone)
-        if tzone != "Europe/Berlin":
-            print("Zone : ", tzone, dt)
-        if method != 10:
-            pconf = PrayerConf(lon, lat, dt, method, 1)
+        correction_day = calc_config.correction_day
+        if self.method == 10:
+            custom_fajr_angle = calc_config.fajr_angle
+            custom_isha_angle = calc_config.isha_angle
+            fajr_isha_method = MethodInfo(9,"Custom",custom_fajr_angle,custom_isha_angle)
         else:
-            angle = PrayerCalculationConfig.objects.latest("id").calculation_angle
-            prayertime_info = MethodInfo(9, "Custom", angle, angle, ())
-            pconf = PrayerConf(lon, lat, dt, prayertime_info, 1)
+            fajr_isha_method = self.method
 
-        pt = Prayer(pconf, current_date)
-        fajr_time = pt.fajr_time()
-        fajr = (
-            (
-                datetime.datetime.combine(datetime.date.today(), fajr_time)
-                + datetime.timedelta(minutes=1)
-            ).time()
-            if fajr_time.second >= 5
-            else fajr_time.replace(second=0)
-        )
-        sherook_time = pt.sherook_time()
-        sherook = (
-            (
-                datetime.datetime.combine(datetime.date.today(), sherook_time)
-                + datetime.timedelta(minutes=1)
-            ).time()
-            if sherook_time.second >= 5
-            else sherook_time.replace(second=0)
-        )
-        dohr_time = pt.dohr_time()
-        dohr = (
-            (
-                datetime.datetime.combine(datetime.date.today(), dohr_time)
-                + datetime.timedelta(minutes=1)
-            ).time()
-            if dohr_time.second >= 5
-            else dohr_time.replace(second=0)
-        )
-        asr_time = pt.asr_time()
-        asr = (
-            (
-                datetime.datetime.combine(datetime.date.today(), asr_time)
-                + datetime.timedelta(minutes=1)
-            ).time()
-            if asr_time.second >= 5
-            else asr_time.replace(second=0)
-        )
-        maghreb_time = pt.maghreb_time()
-        maghreb = (
-            (
-                datetime.datetime.combine(datetime.date.today(), maghreb_time)
-                + datetime.timedelta(minutes=1)
-            ).time()
-            if maghreb_time.second >= 5
-            else maghreb_time.replace(second=0)
-        )
-        ishaa_time = pt.ishaa_time()
-        ishaa = (
-            (
-                datetime.datetime.combine(datetime.date.today(), ishaa_time)
-                + datetime.timedelta(minutes=1)
-            ).time()
-            if ishaa_time.second >= 5
-            else ishaa_time.replace(second=0)
-        )
+        asr_fiqh = 1
 
-        current_day_times = {
-            "Datum": str(current_date.day)
-            + "-"
-            + str(current_date.month)
-            + "-"
-            + str(current_date.year),
-            "Hijri": hijri.format(2),
-            "Hijri_ar": hijri.format(1),
-            "Fajr": fajr.strftime("%H:%M"),
-            "Shuruq": sherook.strftime("%H:%M"),
-            "Dhuhr": dohr.strftime("%H:%M"),
-            "Asr": asr.strftime("%H:%M"),
-            "Maghrib": maghreb.strftime("%H:%M"),
-            "Isha": ishaa.strftime("%H:%M"),
-        }
-        tarawih = prayer_config.tarawih
-        ramadan = prayer_config.ramadan
-        if ramadan == "on":
-            current_day_times["Tarawih"] = tarawih
-            current_day_times["Ramadan"] = "on"
-        else:
-            current_day_times["Ramadan"] = "off"
+        for day in range((self.end_date - self.start_date).days + 1):
+            current_date = self.start_date + timedelta(days=day)
+            tz_name = self.tz_finder.timezone_at(lng=self.longitude, lat=self.latitude)
+            local_tz = timezone(tz_name)
+            utc_offset = local_tz.utcoffset(datetime.combine(current_date, time(12, 0))).total_seconds() / 3600
+            
+            prayer_conf = PrayerConf(self.longitude, self.latitude, utc_offset, fajr_isha_method, asr_fiqh)
+            prayer = Prayer(prayer_conf, current_date)
+            hijri = HijriDate.get_hijri(current_date, correction_val=correction_day)
 
-        if dt == 1:
-            current_day_times["Jumaa"] = "13:30"
-        else:
-            current_day_times["Jumaa"] = "15:00"
-        next_prayer, next_prayer_time = get_next_prayer(current_day_times, tzone)
-        # print(next_prayer, next_prayer_time)
-        current_day_times["NextPrayer"] = {
-            "prayer": next_prayer,
-            "time": next_prayer_time,
-        }
-        data.append(current_day_times)
-        # Move to the next day
-        current_date += timedelta(days=1)
-    if start_date == None:
-        return data[0]
-    return data
+            prayer_times = {
+                "Datum": current_date.strftime("%d-%m-%Y"),
+                "Hijri": hijri.format(2),
+                "Hijri_ar": hijri.format(1),
+                "Fajr": round_time_to_minute(prayer.fajr_time()).strftime("%H:%M"),
+                "Shuruq": round_time_to_minute(prayer.sherook_time()).strftime("%H:%M"),
+                "Dhuhr": round_time_to_minute(prayer.dohr_time()).strftime("%H:%M"),
+                "Asr": round_time_to_minute(prayer.asr_time()).strftime("%H:%M"),
+                "Maghrib": round_time_to_minute(prayer.maghreb_time()).strftime("%H:%M"),
+                "Isha": round_time_to_minute(prayer.ishaa_time()).strftime("%H:%M"),
+                "Ramadan": calc_config.ramadan,
+                "Jumaa": calc_config.jumaa_time.strftime("%H:%M"),
+                "Tarawih": calc_config.tarawih_time.strftime("%H:%M"),
+            }
+
+            prayer_times_list.append(prayer_times)
+        return prayer_times_list

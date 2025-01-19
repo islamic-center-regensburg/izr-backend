@@ -1,6 +1,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.forms import ValidationError
+from datetime import time
 
 
 # Create your models here.
@@ -47,17 +48,17 @@ class PrayerCalculationConfig(models.Model):
     isha_angle = models.FloatField(
         validators=[MinValueValidator(12), MaxValueValidator(18)], default=0.0
     )  # Angle for prayer calculation
-    fjar_angle = models.FloatField(
+    fajr_angle = models.FloatField(
         validators=[MinValueValidator(12), MaxValueValidator(18)], default=0.0
     )  # Angle for prayer calculation
     
     jumaa_time = models.TimeField(
-        default="12:00"
-    )  # Time for Juma prayer
-    
+        default=time(12, 0)
+    )  # Time for Juma prayer (12:00 PM)
+
     tarawih_time = models.TimeField(
-        default="12:00"
-    )  # Time for Tarawih prayer
+        default=time(20, 30)
+    )  # Time for Tarawih prayer (8:30 PM)
 
     default_longitude = models.FloatField(
         default=12.102841
@@ -65,6 +66,13 @@ class PrayerCalculationConfig(models.Model):
     default_latitude = models.FloatField(
         default=49.007734
     )  # Default latitude value for prayer calculation
+
+    correction_day = models.IntegerField(
+        default=1
+    )  # +/- day correction for Hijri calendar
+    ramadan = models.CharField(
+        max_length=3, choices=[("on", "On"), ("off", "Off")], default="off"
+    )
 
     def save(self, *args, **kwargs):
         if not self.pk and PrayerCalculationConfig.objects.exists():
@@ -74,7 +82,7 @@ class PrayerCalculationConfig(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"Prayer Calculation Configuration"
+        return f"Prayer Times Calculations"
 
     @classmethod
     def get_solo_instance(cls):
@@ -83,8 +91,8 @@ class PrayerCalculationConfig(models.Model):
         return obj
 
     class Meta:
-        verbose_name = "Prayer Calculation Configuration"
-        verbose_name_plural = "Prayer Calculation Configuration"
+        verbose_name = "Prayer Times Calculations"
+        verbose_name_plural = "Prayer Times Calculations"
 
 
 
@@ -115,21 +123,13 @@ class PrayerConfig(models.Model):
     isha = models.IntegerField(default=ISHA)
     jumaa = models.IntegerField(default=JUMAA)
     maghrib = models.IntegerField(default=MAGHRIB)
-    tarawih = models.IntegerField(default=TARAWIH)
-
-    day_correction = models.IntegerField(
-        default=1
-    )  # +/- day correction for Hijri calendar
-    ramadan = models.CharField(
-        max_length=3, choices=[("on", "On"), ("off", "Off")], default="off"
-    )
 
     def __str__(self):
         return f"PrayerConfig for Iqama Times"
 
     class Meta:
-        verbose_name = "Prayer Config"
-        verbose_name_plural = "Prayer Configurations"
+        verbose_name = "Iqama Times"
+        verbose_name_plural = "Iqama Times"
 
 
 # Main blog post model
