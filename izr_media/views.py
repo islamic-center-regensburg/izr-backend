@@ -1,6 +1,7 @@
+from .serializers import CalculationMethodSerializer
 from django.core.mail import EmailMessage
 from .serializers import GallerySerializer, GalleryImageSerializer
-from .models import Gallery, GalleryImage
+from .models import CalculationMethod, Gallery, GalleryImage
 import json
 from pathlib import Path
 from django.http import JsonResponse
@@ -259,3 +260,8 @@ def get_prayer_times(request):
 
     else:
         return JsonResponse({"error": "Invalid request method"}, status=405)
+
+
+class CalculationMethodListAPIView(generics.ListAPIView):
+    queryset = CalculationMethod.objects.all()
+    serializer_class = CalculationMethodSerializer

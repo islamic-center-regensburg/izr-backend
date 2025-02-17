@@ -42,6 +42,22 @@ class Token(models.Model):
         return f"Token for OS: {self.os}, test2: {self.test2}"
 
 
+class CalculationMethod(models.Model):
+    # Full name of the calculation method
+    name = models.CharField(max_length=100, unique=True)
+    # Short name (e.g., "jafari")
+    short_name = models.CharField(max_length=50, unique=True)
+    # ID of the calculation method
+    method_id = models.IntegerField(unique=True)
+
+    def __str__(self):
+        return f"{self.name} (ID: {self.method_id})"
+
+    class Meta:
+        verbose_name = "Calculation Method"
+        verbose_name_plural = "Calculation Methods"
+
+
 class PrayerCalculationConfig(models.Model):
     config_name = models.CharField(
         max_length=50, default="Prayer Times Config of The Islamic Center of Regensburg")

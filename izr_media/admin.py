@@ -4,6 +4,7 @@ from django.contrib import admin
 from django.contrib import admin
 from .models import (
     Blog,
+    CalculationMethod,
     ContentItem,
     Event,
     Gallery,
@@ -157,3 +158,22 @@ class GalleryImageInline(admin.TabularInline):
 class GalleryAdmin(admin.ModelAdmin):
     inlines = [GalleryImageInline]
     list_display = ("title", "created_at")
+
+
+@admin.register(CalculationMethod)
+class CalculationMethodAdmin(admin.ModelAdmin):
+    # Fields to display in the list view
+    list_display = ("name", "short_name", "method_id")
+
+    # Fields to include in the search bar
+    search_fields = ("name", "short_name", "method_id")
+
+    # Fields to filter by in the sidebar
+    list_filter = ("method_id",)
+
+    # Fields to display in the edit form
+    fieldsets = (
+        ("General Information", {
+            "fields": ("name", "short_name", "method_id"),
+        }),
+    )
