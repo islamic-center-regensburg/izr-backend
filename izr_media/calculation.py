@@ -190,10 +190,15 @@ class PrayerTimesCalculator:
 
     def _format_response(self, data: dict) -> dict:
         """Format the API response to return prayer times in the desired format."""
+        hijri = str(data["date"]["hijri"]["date"]).split("-")
+        hijri_ar = hijri[0] + " " + \
+            data["date"]["hijri"]["month"]["ar"] + " " + hijri[2]
+        hijri_en = hijri[0] + " " + \
+            data["date"]["hijri"]["month"]["en"] + " " + hijri[2]
         return {
             "Datum": data["date"]["gregorian"]["date"],
-            "Hijri": data["date"]["hijri"]["date"],
-            "Hijri_ar": data["date"]["hijri"]["weekday"]["ar"],
+            "Hijri_ar": hijri_ar,
+            "Hijri": hijri_en,
             "Fajr": data["timings"]["Fajr"].split(" ")[0],
             "Shuruq": data["timings"]["Sunrise"].split(" ")[0],
             "Dhuhr": data["timings"]["Dhuhr"].split(" ")[0],
