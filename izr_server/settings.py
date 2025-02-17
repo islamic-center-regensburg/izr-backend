@@ -47,7 +47,8 @@ MEDIA_ROOT = BASE_DIR / "media"
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     MEDIA_URL = "https://izr-cloud.online/media/"
-    CSRF_TRUSTED_ORIGINS = ["https://izr-cloud.online", "https://iz-regensburg.de"]
+    CSRF_TRUSTED_ORIGINS = [
+        "https://izr-cloud.online", "https://iz-regensburg.de"]
     CORS_ALLOW_ALL_ORIGINS = True
 
 
@@ -196,5 +197,5 @@ JAZZMIN_SETTINGS = {
     "search_model": ["auth.User", "auth.Group"],
     # Field name on user model that contains avatar ImageField/URLField/Charfield or a callable that receives the user
     "user_avatar": None,
-    "changeform_format": "collapsible",
+    "changeform_format": "single",
 }

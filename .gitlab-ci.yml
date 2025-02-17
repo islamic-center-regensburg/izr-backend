@@ -1,0 +1,13 @@
+stages:
+  - deploy
+
+deploy_izr_screen:
+  stage: deploy
+  variables:
+    TARGET: backend
+  trigger:
+    include: 
+      - project: izr-production/izr-server
+        file: .gitlab-ci.yml
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'

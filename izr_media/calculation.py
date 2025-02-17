@@ -1,124 +1,249 @@
-from datetime import datetime, time,timedelta
-from pyIslam.praytimes import PrayerConf, Prayer, MethodInfo,LIST_FAJR_ISHA_METHODS,FixedTime
-from pyIslam.hijri import HijriDate
-from pytz import timezone
-from timezonefinder import TimezoneFinder
-from izr_media.models import (
-    PrayerConfig,
-    PrayerCalculationConfig,
-)  # Import the PrayerConfig model
+"""Prayer times calculator api."""
+
+from datetime import datetime
+import json
+from typing import Any, Final, List
+
+import requests
 
 
-def fixed_init(
-    self,
-    longitude,
-    latitude,
-    timezone,
-    angle_ref=2,
-    asr_madhab=1,
-    enable_summer_time=False,
-):
-    self.longitude = longitude
-    self.latitude = latitude
-    self.timezone = timezone
-    self.sherook_angle = 90.83333
-    self.maghreb_angle = 90.83333
+class Error(Exception):
+    """Base class for exceptions in this module."""
 
-    self.asr_madhab = asr_madhab if asr_madhab == 2 else 1
-    self.middle_longitude = self.timezone * 15
-    self.longitude_difference = (self.middle_longitude - self.longitude) / 15
-    self.summer_time = enable_summer_time
-
-    if type(angle_ref) is int:
-        method = LIST_FAJR_ISHA_METHODS[
-            angle_ref - 1 if angle_ref <= len(LIST_FAJR_ISHA_METHODS) else 2
-        ]
-    elif type(angle_ref) is MethodInfo:  # Correct the check here
-        method = angle_ref
-    else:
-        raise TypeError("angle_ref must be an instance of type int or MethodInfo")
-
-    self.fajr_angle = (
-        (method.fajr_angle + 90.0)
-        if type(method.fajr_angle) is not FixedTime
-        else method.fajr_angle
-    )
-    self.ishaa_angle = (
-        (method.ishaa_angle + 90.0)
-        if type(method.ishaa_angle) is not FixedTime
-        else method.ishaa_angle
-    )
+    pass
 
 
-# Override the original __init__ method with the fixed one
-PrayerConf.__init__ = fixed_init
+class CalculationMethodError(Error):
+    """Exception raised for invalid calculation method"""
 
-def round_time_to_minute(time):
-    """
-    Rounds time to the nearest minute: 
-    If seconds >= 30, round up, otherwise round down.
-    """
-    from datetime import datetime, timedelta
+    def __init__(self, variable: str, supported_values: list[str]) -> None:
+        self.message = f"{variable} is invalid. Must be one of {supported_values}"
+        super().__init__(self.message)
 
-    # Convert time to a datetime object
-    temp_datetime = datetime.combine(datetime.today(), time)
 
-    # Round the time
-    if temp_datetime.second >= 5:
-        rounded_time = (temp_datetime + timedelta(minutes=1)).replace(second=0, microsecond=0)
-    else:
-        rounded_time = temp_datetime.replace(second=0, microsecond=0)
+class InvalidResponseError(Error):
+    """Exception raised when receiving an invalid response"""
 
-    return rounded_time.time()
+    pass
+
+
+API_URL: Final = "http://api.aladhan.com/v1"
+
+CALCULATION_METHODS: Final = {
+    "jafari": 0,
+    "karachi": 1,
+    "isna": 2,
+    "mwl": 3,
+    "makkah": 4,
+    "egypt": 5,
+    "tehran": 7,
+    "gulf": 8,
+    "kuwait": 9,
+    "qatar": 10,
+    "singapore": 11,
+    "france": 12,
+    "turkey": 13,
+    "russia": 14,
+    "moonsighting": 15,
+    "dubai": 16,
+    "jakim": 17,
+    "tunisia": 18,
+    "algeria": 19,
+    "kemenag": 20,
+    "morocco": 21,
+    "portugal": 22,
+    "jordan": 23,
+    "custom": 99,
+}
+
+SCHOOLS: Final = {"shafi": 0, "hanafi": 1}
+MIDNIGHT_MODES: Final = {"standard": 0, "jafari": 1}
+LAT_ADJ_METHODS: Final = {"middle of the night": 1,
+                          "one seventh": 2, "angle based": 3}
+
 
 class PrayerTimesCalculator:
-    def __init__(self, start_date, end_date, longitude, latitude, method=10):
-        self.start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
-        self.end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
-        self.longitude = longitude
-        self.latitude = latitude
-        self.tz_finder = TimezoneFinder()
-        self.method = method
+    """Prayer time calculator class."""
 
-    def get_prayer_times(self):
-        prayer_times_list = []
-        config = PrayerConfig.objects.first()
-        calc_config = PrayerCalculationConfig.objects.first()
+    def __init__(
+        self,
+        latitude: float,
+        longitude: float,
+        calculation_method: str,
+        school: str = "",
+        midnightMode: str = "",
+        latitudeAdjustmentMethod: str = "",
+        tune=False,
+        imsak_tune=0,
+        fajr_tune=0,
+        sunrise_tune=0,
+        dhuhr_tune=0,
+        asr_tune=0,
+        maghrib_tune=0,
+        sunset_tune=0,
+        isha_tune=0,
+        midnight_tune=0,
+        fajr_angle: float | int | None = None,
+        maghrib_angle: float | int | None = None,
+        isha_angle: float | int | None = None,
+        shafaq="general",
+        iso8601=False,
+    ) -> None:
+        if calculation_method.lower() not in CALCULATION_METHODS:
+            raise CalculationMethodError(
+                calculation_method, list(CALCULATION_METHODS))
 
-        correction_day = calc_config.correction_day
-        if self.method == 10:
-            custom_fajr_angle = calc_config.fajr_angle
-            custom_isha_angle = calc_config.isha_angle
-            fajr_isha_method = MethodInfo(9,"Custom",custom_fajr_angle,custom_isha_angle)
+        if school and school.lower() not in SCHOOLS:
+            raise CalculationMethodError(school, list(SCHOOLS))
+
+        if midnightMode and midnightMode.lower() not in MIDNIGHT_MODES:
+            raise CalculationMethodError(midnightMode, list(MIDNIGHT_MODES))
+
+        if (
+            latitudeAdjustmentMethod
+            and latitudeAdjustmentMethod.lower() not in LAT_ADJ_METHODS
+        ):
+            raise CalculationMethodError(
+                latitudeAdjustmentMethod, list(LAT_ADJ_METHODS)
+            )
+
+        self._latitude = latitude
+        self._longitude = longitude
+
+        self._calculation_method = CALCULATION_METHODS[calculation_method.lower(
+        )]
+        self._method_settings: str | None = None
+        if self._calculation_method == 99:
+            self._method_settings = self.parse_method_settings(
+                fajr_angle, maghrib_angle, isha_angle
+            )
+
+        self._school = SCHOOLS.get(school.lower())
+        self._midnight_mode = MIDNIGHT_MODES.get(midnightMode.lower())
+        self._lat_adj_method = LAT_ADJ_METHODS.get(
+            latitudeAdjustmentMethod.lower())
+
+        if tune is True:
+            tunes = [
+                imsak_tune,
+                fajr_tune,
+                sunrise_tune,
+                dhuhr_tune,
+                asr_tune,
+                maghrib_tune,
+                sunset_tune,
+                isha_tune,
+                midnight_tune,
+            ]
+            self._tune = ",".join(map(str, tunes))
         else:
-            fajr_isha_method = self.method
+            self._tune = ""
+        self.iso8601 = "true" if iso8601 else "false"
 
-        asr_fiqh = 1
+    @staticmethod
+    def parse_method_settings(
+        fajr_angle: float | int | None,
+        maghrib_angle: float | int | None,
+        isha_angle: float | int | None,
+    ) -> str:
+        """Return method settings string format."""
+        method_settings: list[str] = []
+        if fajr_angle is None:
+            method_settings.append("null")
+        elif isinstance(fajr_angle, (int, float)):
+            method_settings.append(str(fajr_angle))
+        else:
+            raise ValueError("angle must be float.")
+        if maghrib_angle is None:
+            method_settings.append("null")
+        elif isinstance(maghrib_angle, (int, float)):
+            method_settings.append(str(maghrib_angle))
+        else:
+            raise ValueError("angle must be float.")
+        if isha_angle is None:
+            method_settings.append("null")
+        elif isinstance(isha_angle, (int, float)):
+            method_settings.append(str(isha_angle))
+        else:
+            raise ValueError("angle must be float.")
+        return ",".join(method_settings)
 
-        for day in range((self.end_date - self.start_date).days + 1):
-            current_date = self.start_date + timedelta(days=day)
-            tz_name = self.tz_finder.timezone_at(lng=self.longitude, lat=self.latitude)
-            local_tz = timezone(tz_name)
-            utc_offset = local_tz.utcoffset(datetime.combine(current_date, time(12, 0))).total_seconds() / 3600
-            
-            prayer_conf = PrayerConf(self.longitude, self.latitude, utc_offset, fajr_isha_method, asr_fiqh)
-            prayer = Prayer(prayer_conf, current_date)
-            hijri = HijriDate.get_hijri(current_date, correction_val=correction_day)
+    def _build_params(self) -> dict[str, Any]:
+        """Build the parameters dictionary for API requests."""
+        params: dict[str, Any] = {
+            "latitude": self._latitude,
+            "longitude": self._longitude,
+            "method": self._calculation_method,
+            "iso8601": self.iso8601,
+        }
+        if self._school:
+            params["school"] = self._school
+        if self._midnight_mode:
+            params["midnightMode"] = self._midnight_mode
+        if self._lat_adj_method:
+            params["latitudeAdjustmentMethod"] = self._lat_adj_method
+        if self._tune:
+            params["tune"] = self._tune
+        if self._method_settings:
+            params["methodSettings"] = self._method_settings
+        return params
 
-            prayer_times = {
-                "Datum": current_date.strftime("%d-%m-%Y"),
-                "Hijri": hijri.format(2),
-                "Hijri_ar": hijri.format(1),
-                "Fajr": round_time_to_minute(prayer.fajr_time()).strftime("%H:%M"),
-                "Shuruq": round_time_to_minute(prayer.sherook_time()).strftime("%H:%M"),
-                "Dhuhr": round_time_to_minute(prayer.dohr_time()).strftime("%H:%M"),
-                "Asr": round_time_to_minute(prayer.asr_time()).strftime("%H:%M"),
-                "Maghrib": round_time_to_minute(prayer.maghreb_time()).strftime("%H:%M"),
-                "Isha": round_time_to_minute(prayer.ishaa_time()).strftime("%H:%M"),
-                "Ramadan": calc_config.ramadan,
-                "Jumaa": calc_config.jumaa_time.strftime("%H:%M"),
-                "Tarawih": calc_config.tarawih_time.strftime("%H:%M"),
-            }
+    def _format_response(self, data: dict) -> dict:
+        """Format the API response to return prayer times in the desired format."""
+        return {
+            "Datum": data["date"]["gregorian"]["date"],
+            "Hijri": data["date"]["hijri"]["date"],
+            "Hijri_ar": data["date"]["hijri"]["weekday"]["ar"],
+            "Fajr": data["timings"]["Fajr"].split(" ")[0],
+            "Shuruq": data["timings"]["Sunrise"].split(" ")[0],
+            "Dhuhr": data["timings"]["Dhuhr"].split(" ")[0],
+            "Asr": data["timings"]["Asr"].split(" ")[0],
+            "Maghrib": data["timings"]["Maghrib"].split(" ")[0],
+            "Isha": data["timings"]["Isha"].split(" ")[0],
+        }
 
-            prayer_times_list.append(prayer_times)
-        return prayer_times_list
+    def fetch_daily_prayer_times(self, date) -> dict[str, Any]:
+        """Fetch daily prayer times for the specified date."""
+        try:
+            date_parsed = datetime.strptime(date, "%Y-%m-%d")
+        except ValueError as err:
+            raise ValueError(
+                "Invalid date string. Must be 'yyyy-mm-dd'") from err
+
+        self._date = date_parsed.strftime("%d-%m-%Y")
+        url = f"{API_URL}/timings/{self._date}"
+        params = self._build_params()
+
+        response = requests.get(url, params=params, timeout=10)
+
+        if not response.status_code == 200:
+            raise InvalidResponseError(
+                f"Unable to retrieve prayer times. URL: {url}")
+
+        return self._format_response(response.json()["data"])
+
+    def fetch_monthly_prayer_times(self, month: int, year: int, hijri: bool = False) -> List[dict[str, Any]]:
+        """Fetch monthly prayer times."""
+        url = f"{API_URL}/{'hijriCalendar' if hijri else 'calendar'}/{year}/{month}"
+        params = self._build_params()
+
+        response = requests.get(url, params=params, timeout=10)
+
+        if not response.status_code == 200:
+            raise InvalidResponseError(
+                f"Unable to retrieve monthly prayer times. URL: {url}")
+
+        return [self._format_response(day) for day in response.json()["data"]]
+
+    def fetch_annual_prayer_times(self, year: int, hijri: bool = False) -> List[dict[str, Any]]:
+        """Fetch annual prayer times."""
+        url = f"{API_URL}/{'hijriCalendar' if hijri else 'calendar'}/{year}"
+        params = self._build_params()
+
+        response = requests.get(url, params=params, timeout=10)
+
+        if not response.status_code == 200:
+            raise InvalidResponseError(
+                f"Unable to retrieve annual prayer times. URL: {url}")
+
+        return [self._format_response(day) for day in response.json()["data"]]

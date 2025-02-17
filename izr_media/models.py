@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.forms import ValidationError
@@ -32,7 +33,8 @@ class Hadith(models.Model):
 
 
 class Token(models.Model):
-    os = models.CharField(max_length=50)  # Operating system (e.g., 'ios', 'android')
+    # Operating system (e.g., 'ios', 'android')
+    os = models.CharField(max_length=50)
     token = models.TextField()  # The actual token value
     test2 = models.BooleanField(default=False)  # Dummy key
 
@@ -40,25 +42,9 @@ class Token(models.Model):
         return f"Token for OS: {self.os}, test2: {self.test2}"
 
 
-from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator
-from django.core.exceptions import ValidationError
-
 class PrayerCalculationConfig(models.Model):
-    isha_angle = models.FloatField(
-        validators=[MinValueValidator(12), MaxValueValidator(18)], default=0.0
-    )  # Angle for prayer calculation
-    fajr_angle = models.FloatField(
-        validators=[MinValueValidator(12), MaxValueValidator(18)], default=0.0
-    )  # Angle for prayer calculation
-    
-    jumaa_time = models.TimeField(
-        default=time(12, 0)
-    )  # Time for Juma prayer (12:00 PM)
-
-    tarawih_time = models.TimeField(
-        default=time(20, 30)
-    )  # Time for Tarawih prayer (8:30 PM)
+    config_name = models.CharField(
+        max_length=50, default="Prayer Times Config of The Islamic Center of Regensburg")
 
     default_longitude = models.FloatField(
         default=12.102841
@@ -67,12 +53,38 @@ class PrayerCalculationConfig(models.Model):
         default=49.007734
     )  # Default latitude value for prayer calculation
 
-    correction_day = models.IntegerField(
-        default=1
-    )  # +/- day correction for Hijri calendar
     ramadan = models.CharField(
         max_length=3, choices=[("on", "On"), ("off", "Off")], default="off"
     )
+    jumaa_time = models.TimeField(
+        default=time(12, 0)
+    )  # Time for Juma prayer (12:00 PM)
+
+    tarawih_time = models.TimeField(
+        default=time(20, 30)
+    )  # Time for Tarawih prayer (8:30 PM)
+
+    # Tuning parameters for prayer times
+    imsak_tune = models.IntegerField(default=0)  # Tuning for Imsak in minutes
+    fajr_tune = models.IntegerField(default=0)   # Tuning for Fajr in minutes
+    sunrise_tune = models.IntegerField(
+        default=0)  # Tuning for Sunrise in minutes
+    # Tuning for Dhuhr in minutes
+    dhuhr_tune = models.IntegerField(default=0)
+    asr_tune = models.IntegerField(default=0)      # Tuning for Asr in minutes
+    maghrib_tune = models.IntegerField(
+        default=0)  # Tuning for Maghrib in minutes
+    sunset_tune = models.IntegerField(
+        default=0)   # Tuning for Sunset in minutes
+    isha_tune = models.IntegerField(default=0)     # Tuning for Isha in minutes
+    midnight_tune = models.IntegerField(
+        default=0)  # Tuning for Midnight in minutes
+    isha_angle = models.FloatField(
+        validators=[MinValueValidator(12), MaxValueValidator(18)], default=18.0
+    )  # Angle for Isha prayer calculation
+    fajr_angle = models.FloatField(
+        validators=[MinValueValidator(12), MaxValueValidator(18)], default=18.0
+    )  # Angle for Fajr prayer calculation
 
     def save(self, *args, **kwargs):
         if not self.pk and PrayerCalculationConfig.objects.exists():
@@ -93,7 +105,6 @@ class PrayerCalculationConfig(models.Model):
     class Meta:
         verbose_name = "Prayer Times Calculations"
         verbose_name_plural = "Prayer Times Calculations"
-
 
 
 class PrayerConfig(models.Model):
@@ -154,16 +165,19 @@ class ContentItem(models.Model):
     blog = models.ForeignKey(
         Blog, related_name="content_items", on_delete=models.CASCADE
     )
-    order = models.PositiveIntegerField(default=0)  # To keep the content in order
+    order = models.PositiveIntegerField(
+        default=0)  # To keep the content in order
     content_type = models.CharField(choices=ORDER_TYPE_CHOICES, max_length=50)
-    text = models.TextField(blank=True, null=True)  # For headers and paragraphs
+    # For headers and paragraphs
+    text = models.TextField(blank=True, null=True)
     image = models.ImageField(
         upload_to="blog_images/", blank=True, null=True
     )  # For images
     v_image = models.BooleanField(default=False, verbose_name="Vertical Image")
 
     class Meta:
-        ordering = ["order"]  # To ensure the content is ordered by the "order" field
+        # To ensure the content is ordered by the "order" field
+        ordering = ["order"]
 
     def __str__(self):
         return f"{self.content_type} - {self.blog.title}"
@@ -184,7 +198,8 @@ class GalleryImage(models.Model):
     gallery = models.ForeignKey(
         Gallery, related_name="images", on_delete=models.CASCADE
     )
-    image = models.ImageField(upload_to="gallery_images/", verbose_name="Upload Image")
+    image = models.ImageField(
+        upload_to="gallery_images/", verbose_name="Upload Image")
     is_vertical = models.BooleanField(
         default=True, verbose_name="Is Vertical"
     )  # Boolean to toggle orientation
@@ -199,7 +214,8 @@ class Statement(models.Model):
 
     title = models.CharField(max_length=255)
     content = models.TextField()
-    type = models.CharField(choices=TYPE_CHOICES, max_length=50, default="about_us")
+    type = models.CharField(choices=TYPE_CHOICES,
+                            max_length=50, default="about_us")
 
     def __str__(self):
         return self.title
