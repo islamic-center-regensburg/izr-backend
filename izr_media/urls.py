@@ -11,7 +11,8 @@ from .views import (
     today_prayer_times,
     StatementView,
     send_email_post,
-    old_get_prayer_times
+    old_get_prayer_times,
+    prayer_times
 )
 
 
@@ -33,6 +34,6 @@ urlpatterns = [
     path("send_email/", send_email_post, name="send_email_post"),
     path("calculation-methods/", CalculationMethodListAPIView.as_view(),
          name="calculation-methods-list"),
-    # path("prayer-times/", ..., name="monthly-prayer-times")
+    path("prayer-times", prayer_times, name="monthly-prayer-times")
 
 ]

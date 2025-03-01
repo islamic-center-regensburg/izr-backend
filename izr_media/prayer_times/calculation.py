@@ -232,6 +232,8 @@ class PrayerTimesCalculator:
         url = f"{API_URL}/{'hijriCalendar' if hijri else 'calendar'}/{year}/{month}"
         params = self._build_params()
 
+        print("params : ", params)
+
         response = requests.get(url, params=params, timeout=10)
 
         if not response.status_code == 200:
@@ -244,11 +246,18 @@ class PrayerTimesCalculator:
         """Fetch annual prayer times."""
         url = f"{API_URL}/{'hijriCalendar' if hijri else 'calendar'}/{year}"
         params = self._build_params()
-
+        print("url : ", url)
         response = requests.get(url, params=params, timeout=10)
+        print("response", response.json()["data"])
 
         if not response.status_code == 200:
             raise InvalidResponseError(
                 f"Unable to retrieve annual prayer times. URL: {url}")
 
-        return [self._format_response(day) for day in response.json()["data"]]
+        year_prayer_times = []
+        for day, prayer_times_list in response.json()["data"].items():
+            for prayer_time in prayer_times_list:  # Iterate over list of prayer times
+                year_prayer_times.append(self._format_response(
+                    prayer_time))  # Format each prayer time entry
+
+        return year_prayer_times

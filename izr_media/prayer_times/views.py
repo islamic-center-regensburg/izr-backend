@@ -9,6 +9,7 @@ from ..models import (
 
 from datetime import datetime
 from .angles import get_regensburg_angles
+from hijri_converter import Hijri, Gregorian
 
 
 def old_calculation(request):
@@ -109,28 +110,23 @@ def get_prayer_times(request):
     if request.method == "POST":
         try:
             data = json.loads(request.body)
+            config = PrayerCalculationConfig.objects.latest("id")
 
             # Extract parameters from the request
-            lat = data.get("lat", None)
-            lng = data.get("lng", None)
-            method = data.get("method", 10)  # Default method is Qatar (ID: 10)
+            lat = data.get("lat", config.default_latitude)
+            lng = data.get("lng", config.default_longitude)
+            # Default method is Qatar (ID: 10)
+            method = data.get("method", "custom")
             period = data.get("period", "monthly")  # monthlyor annual
             # Month or year, depending on the period
             value = data.get("value", None)
             hijri = data.get("hijri", False)  # Whether to use Hijri calendar
 
-            # Fetch the latest configuration
-            config = PrayerCalculationConfig.objects.latest("id")
-
-            # If lat/lng are not provided, use the default values
-            if lat is None or lng is None:
-                lat = config.default_latitude
-                lng = config.default_longitude
-
             # If method is 99 (custom), retrieve angles and tuning parameters
-            if method == 99:
-                fajr_angle = config.fajr_angle
-                isha_angle = config.isha_angle
+            if method == "custom":
+                angles = get_regensburg_angles()
+                fajr_angle = angles["fajr_angle"]
+                isha_angle = angles["isha_angle"]
                 tune = True
                 tuning_params = {
                     "imsak_tune": config.imsak_tune,
@@ -170,6 +166,8 @@ def get_prayer_times(request):
             # Fetch prayer times based on the period
             if period == "monthly":
                 year = datetime.now().year  # Use current year if not provided
+                if hijri:
+                    year = Gregorian(year, 1, 1).to_hijri().year
                 month = value
                 prayer_times = calculator.fetch_monthly_prayer_times(
                     month=month, year=year, hijri=hijri)

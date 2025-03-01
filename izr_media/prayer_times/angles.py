@@ -5,6 +5,7 @@ from izr_media.models import (
 
 def get_regensburg_angles():
     config = PrayerCalculationConfig.objects.latest("id")
+    print(config.calculation_type)
     if config.calculation_type == "static":
         return {"fajr_angle": config.fajr_angle, "isha_angle": config.isha_angle}
     else:
