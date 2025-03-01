@@ -4,7 +4,6 @@ from pyIslam.hijri import HijriDate
 from pytz import timezone
 from timezonefinder import TimezoneFinder
 from izr_media.models import (
-    PrayerConfig,
     PrayerCalculationConfig,
 )  # Import the PrayerConfig model
 
