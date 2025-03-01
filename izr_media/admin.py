@@ -93,6 +93,7 @@ class PrayerCalculationConfigAdmin(admin.ModelAdmin):
                 "jumaa_time",
                 "tarawih_time",
                 "ramadan",
+                "correction_day",
             ),
         }),
         ("Tuning Parameters", {

@@ -72,6 +72,7 @@ class PrayerCalculationConfig(models.Model):
     ramadan = models.CharField(
         max_length=3, choices=[("on", "On"), ("off", "Off")], default="off"
     )
+    correction_day = models.IntegerField(default=0)
     jumaa_time = models.TimeField(
         default=time(12, 0)
     )  # Time for Juma prayer (12:00 PM)

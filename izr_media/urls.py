@@ -9,10 +9,10 @@ from .views import (
     PrayerConfigView,
     TokenListCreateView,
     download_latest_backup,
-    get_prayer_times,
     get_today_prayer_times,
     StatementView,
     send_email_post,
+    old_get_prayer_times
 )
 
 
@@ -24,7 +24,7 @@ urlpatterns = [
     ),  # Access Hadith without an ID
     path("pushtokens/", TokenListCreateView.as_view(), name="token-list-create"),
     path("iqamah/", PrayerConfigView.as_view(), name="prayer-config"),
-    path("calculTimes/", get_prayer_times,
+    path("calculTimes/", old_get_prayer_times,
          name="get_prayer_times"),  # Add this line
     path(
         "getPrayers/", get_today_prayer_times, name="get_prayer_times"
