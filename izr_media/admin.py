@@ -113,6 +113,7 @@ class PrayerCalculationConfigAdmin(admin.ModelAdmin):
             "fields": (
                 "isha_angle",
                 "fajr_angle",
+                "calculation_type",
             ),
         }),
     )

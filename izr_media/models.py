@@ -59,9 +59,14 @@ class CalculationMethod(models.Model):
 
 
 class PrayerCalculationConfig(models.Model):
+    CALCULATION_TYPE_CHOICES = [
+        ("static", "Static (use fixed angles)"),
+        ("dynamic", "Dynamic (use dynamic angle)")
+    ]
     config_name = models.CharField(
         max_length=50, default="Prayer Times Config of The Islamic Center of Regensburg")
-
+    calculation_type = models.CharField(
+        choices=CALCULATION_TYPE_CHOICES, max_length=50, default="static")
     default_longitude = models.FloatField(
         default=12.102841
     )  # Default longitude value for prayer calculation
