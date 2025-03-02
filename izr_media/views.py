@@ -1,12 +1,15 @@
+from django.test import RequestFactory
+
+from .serializers import CalculationMethodSerializer
+from django.core.mail import EmailMessage
+from .serializers import GallerySerializer, GalleryImageSerializer
+from .models import CalculationMethod, Gallery, GalleryImage
 import json
 from pathlib import Path
 from django.http import JsonResponse
-from django.shortcuts import render
-from rest_framework import generics, viewsets
+from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.views import APIView
-from rest_framework.parsers import MultiPartParser, FormParser
 
 
 from .models import (
@@ -30,15 +33,8 @@ from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime
 
 
-import os
 from django.conf import settings
 from django.http import FileResponse, Http404
-from django.shortcuts import get_object_or_404
-
-
-from izr_media.calculation import (
-    PrayerTimesCalculator,
-)  # Replace with the actual path of the function
 
 
 class EventViewSet(generics.ListAPIView):
@@ -76,11 +72,13 @@ class TokenListCreateView(generics.ListCreateAPIView):
 
     def get(self, request, *args, **kwargs):
         tokens = self.get_queryset()  # Retrieve all tokens
-        serializer = self.get_serializer(tokens, many=True)  # Serialize the queryset
+        serializer = self.get_serializer(
+            tokens, many=True)  # Serialize the queryset
         return Response(serializer.data)
 
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)  # Deserialize input data
+        serializer = self.get_serializer(
+            data=request.data)  # Deserialize input data
         if serializer.is_valid():  # Validate the input data
             token = serializer.save()  # Create a new token instance
             return Response(
@@ -101,83 +99,9 @@ class StatementView(generics.ListAPIView):
     serializer_class = StatementSerializer
 
 
-@csrf_exempt
-def get_today_prayer_times(request):
-    if request.method == "GET":
-        today = datetime.now().strftime("%Y-%m-%d")
-
-        lat = PrayerCalculationConfig.objects.latest("id").default_latitude
-        lng = PrayerCalculationConfig.objects.latest("id").default_longitude
-
-        calculator = PrayerTimesCalculator(today, today, lng, lat)
-        prayer_times = calculator.get_prayer_times()
-
-        response = JsonResponse(prayer_times[0], safe=False)
-        response["Access-Control-Allow-Origin"] = "*"
-        return response
-    else:
-        return JsonResponse({"error": "Invalid request method"}, status=405)
-
-@csrf_exempt
-def get_prayer_times(request):
-    if request.method == "POST":
-        try:
-            data = json.loads(request.body)
-
-            city_name = data.get("city_name", "Regensburg")
-            lat = data.get("lat", None)
-            lng = data.get("lng", None)
-            start_date = data.get("start_date", None)
-            end_date = data.get("end_date", None)
-            method = data.get("method", 10)
-            if end_date and start_date:
-                start_date = f"{start_date["y"]}-{start_date["m"]}-{start_date["d"]}"
-                end_date = f"{end_date["y"]}-{end_date["m"]}-{end_date["d"]}"
-
-            if city_name.lower() == "regensburg":
-                lat = PrayerCalculationConfig.objects.latest("id").default_latitude if lat is None else lat
-                lng = PrayerCalculationConfig.objects.latest("id").default_longitude if lng is None else lng
-
-            if lat is None or lng is None:
-                return JsonResponse({"error": "Latitude and Longitude must be provided"}, status=400)
-            if start_date is None or end_date is None:
-                return JsonResponse({"error": "Start date and End date must be provided"}, status=400)
-
-            calculator = PrayerTimesCalculator(start_date, end_date, lng, lat, method)
-            prayer_times = calculator.get_prayer_times()
-
-            return JsonResponse(prayer_times, safe=False)
-
-        except KeyError as e:
-            return JsonResponse({"error": f"Missing key: {str(e)}"}, status=400)
-        except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
-
-    else:
-        return JsonResponse({"error": "Invalid request method"}, status=405)
-
 class BlogDetailAPIView(generics.ListAPIView):
     queryset = Blog.objects.all()
     serializer_class = BlogSerializer
-
-
-def download_latest_backup(request):
-    db = Path(settings.BASE_DIR) / "db.sqlite3"
-    print(db)
-    try:
-        if not db.exists():
-            raise Http404("No backup found.")
-
-        return FileResponse(
-            db.open("rb"), as_attachment=True, filename="db_latest.sqlite3"
-        )
-
-    except FileNotFoundError:
-        raise Http404("Backup directory not found.")
-
-
-from .models import Gallery, GalleryImage
-from .serializers import GallerySerializer, GalleryImageSerializer
 
 
 class GalleryListCreateView(generics.ListCreateAPIView):
@@ -188,12 +112,6 @@ class GalleryListCreateView(generics.ListCreateAPIView):
 class GalleryImageListCreateView(generics.ListCreateAPIView):
     queryset = GalleryImage.objects.all()
     serializer_class = GalleryImageSerializer
-
-
-from django.core.mail import EmailMessage
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-import json
 
 
 @csrf_exempt  # Only use in development, in production use a CSRF token.
@@ -224,3 +142,26 @@ def send_email_post(request):
             return JsonResponse({"error": str(e)}, status=500)
     else:
         return JsonResponse({"error": "Only POST requests are allowed"}, status=405)
+
+
+@csrf_exempt
+def prayer_times(request):
+    from .prayer_times.views import get_prayer_times
+    return get_prayer_times(request)
+
+
+@csrf_exempt
+def today_prayer_times(request):
+    from .prayer_times.views import get_today_prayer_times
+    return get_today_prayer_times(request)
+
+
+@csrf_exempt
+def old_get_prayer_times(request):
+    from .prayer_times.views import old_calculation
+    return old_calculation(request=request)
+
+
+class CalculationMethodListAPIView(generics.ListAPIView):
+    queryset = CalculationMethod.objects.all()
+    serializer_class = CalculationMethodSerializer

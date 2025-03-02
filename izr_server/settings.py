@@ -15,11 +15,16 @@ from pathlib import Path
 from corsheaders.defaults import default_headers
 import environ
 
-env = environ.Env()
+BASE_DIR = Path(__file__).resolve().parent.parent
 
+env = environ.Env(
+    DEBUG=(bool, False)  # Define types and defaults
+)
+
+# Automatically fetch environment variables (already loaded by Docker)
+DEBUG = env.bool('DEBUG', default=False)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -28,7 +33,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-n%1hm%k)$$pwxp6$@$ag)jms9nsdizh++kz_nr94qaxj-ye@8j"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env.bool('DEBUG', default=True)
 
 
 # Common settings for both DEBUG and non-DEBUG environments
@@ -43,7 +47,8 @@ MEDIA_ROOT = BASE_DIR / "media"
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     MEDIA_URL = "https://izr-cloud.online/media/"
-    CSRF_TRUSTED_ORIGINS = ["https://izr-cloud.online", "https://iz-regensburg.de"]
+    CSRF_TRUSTED_ORIGINS = [
+        "https://izr-cloud.online", "https://iz-regensburg.de"]
     CORS_ALLOW_ALL_ORIGINS = True
 
 
@@ -57,8 +62,7 @@ else:
 
 # Application definition
 
-# Core Django apps
-DJANGO_APPS = [
+INSTALLED_APPS = [
     "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -68,18 +72,12 @@ DJANGO_APPS = [
     "django.contrib.staticfiles",
     "corsheaders",
     "rest_framework",
+    "izr_products",
+    "izr_media",
+    "izr_staff",
+    "izr_school"
 ]
 
-# Optional izr_ apps based on environment variables
-OPTIONAL_APPS = [
-    "izr_products" if env.bool("USE_IZR_PRODUCTS", default=False) else None,
-    "izr_media" if env.bool("USE_IZR_MEDIA", default=False) else None,
-    "izr_staff" if env.bool("USE_IZR_STAFF", default=False) else None,
-    "izr_school" if env.bool("USE_IZR_SCHOOL", default=False) else None,
-]
-
-# Remove None values and combine app lists
-INSTALLED_APPS = DJANGO_APPS + [app for app in OPTIONAL_APPS if app]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -199,5 +197,5 @@ JAZZMIN_SETTINGS = {
     "search_model": ["auth.User", "auth.Group"],
     # Field name on user model that contains avatar ImageField/URLField/Charfield or a callable that receives the user
     "user_avatar": None,
-    "changeform_format": "collapsible",
+    "changeform_format": "single",
 }

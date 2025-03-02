@@ -1,3 +1,5 @@
+from .models import CalculationMethod
+from .models import Token
 from rest_framework import serializers
 from .models import (
     Blog,
@@ -33,17 +35,14 @@ class HadithSerializer(serializers.ModelSerializer):
         fields = ["data_ar", "data_de", "hadith_ar", "hadith_de"]
 
 
-from rest_framework import serializers
-from .models import Token
-
-
 class TokenSerializer(serializers.ModelSerializer):
     class Meta:
         model = Token
         fields = ["os", "token", "test2"]  # Fields to be serialized
 
     def create(self, validated_data):
-        return Token.objects.create(**validated_data)  # Create a single token instance
+        # Create a single token instance
+        return Token.objects.create(**validated_data)
 
 
 class PrayerConfigSerializer(serializers.ModelSerializer):
@@ -56,9 +55,6 @@ class PrayerConfigSerializer(serializers.ModelSerializer):
             "isha",
             "jumaa",
             "maghrib",
-            "tarawih",
-            "day_correction",
-            "ramadan",
         ]
 
 
@@ -69,11 +65,13 @@ class ContentItemSerializer(serializers.ModelSerializer):
 
 
 class BlogSerializer(serializers.ModelSerializer):
-    content_items = ContentItemSerializer(many=True)  # Serialize related content items
+    content_items = ContentItemSerializer(
+        many=True)  # Serialize related content items
 
     class Meta:
         model = Blog
-        fields = ["id", "title", "author", "created_at", "updated_at", "content_items"]
+        fields = ["id", "title", "author",
+                  "created_at", "updated_at", "content_items"]
 
 
 class StatementSerializer(serializers.ModelSerializer):
@@ -95,7 +93,8 @@ class GalleryImageSerializer(serializers.ModelSerializer):
 
 
 class GallerySerializer(serializers.ModelSerializer):
-    images = GalleryImageSerializer(many=True, read_only=True)  # Include related images
+    images = GalleryImageSerializer(
+        many=True, read_only=True)  # Include related images
 
     class Meta:
         model = Gallery
@@ -106,3 +105,9 @@ class GallerySerializer(serializers.ModelSerializer):
             "images",
             "created_at",
         ]  # Specify fields to be serialized
+
+
+class CalculationMethodSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CalculationMethod
+        fields = ("name", "short_name", "method_id")

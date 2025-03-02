@@ -1,10 +1,9 @@
-from datetime import datetime, time,timedelta
-from pyIslam.praytimes import PrayerConf, Prayer, MethodInfo,LIST_FAJR_ISHA_METHODS,FixedTime
+from datetime import datetime, time, timedelta
+from pyIslam.praytimes import PrayerConf, Prayer, MethodInfo, LIST_FAJR_ISHA_METHODS, FixedTime
 from pyIslam.hijri import HijriDate
 from pytz import timezone
 from timezonefinder import TimezoneFinder
 from izr_media.models import (
-    PrayerConfig,
     PrayerCalculationConfig,
 )  # Import the PrayerConfig model
 
@@ -36,7 +35,8 @@ def fixed_init(
     elif type(angle_ref) is MethodInfo:  # Correct the check here
         method = angle_ref
     else:
-        raise TypeError("angle_ref must be an instance of type int or MethodInfo")
+        raise TypeError(
+            "angle_ref must be an instance of type int or MethodInfo")
 
     self.fajr_angle = (
         (method.fajr_angle + 90.0)
@@ -53,6 +53,7 @@ def fixed_init(
 # Override the original __init__ method with the fixed one
 PrayerConf.__init__ = fixed_init
 
+
 def round_time_to_minute(time):
     """
     Rounds time to the nearest minute: 
@@ -65,13 +66,15 @@ def round_time_to_minute(time):
 
     # Round the time
     if temp_datetime.second >= 5:
-        rounded_time = (temp_datetime + timedelta(minutes=1)).replace(second=0, microsecond=0)
+        rounded_time = (temp_datetime + timedelta(minutes=1)
+                        ).replace(second=0, microsecond=0)
     else:
         rounded_time = temp_datetime.replace(second=0, microsecond=0)
 
     return rounded_time.time()
 
-class PrayerTimesCalculator:
+
+class OldPrayerTimesCalculator:
     def __init__(self, start_date, end_date, longitude, latitude, method=10):
         self.start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
         self.end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
@@ -82,14 +85,14 @@ class PrayerTimesCalculator:
 
     def get_prayer_times(self):
         prayer_times_list = []
-        config = PrayerConfig.objects.first()
         calc_config = PrayerCalculationConfig.objects.first()
 
         correction_day = calc_config.correction_day
         if self.method == 10:
             custom_fajr_angle = calc_config.fajr_angle
             custom_isha_angle = calc_config.isha_angle
-            fajr_isha_method = MethodInfo(9,"Custom",custom_fajr_angle,custom_isha_angle)
+            fajr_isha_method = MethodInfo(
+                9, "Custom", custom_fajr_angle, custom_isha_angle)
         else:
             fajr_isha_method = self.method
 
@@ -97,13 +100,17 @@ class PrayerTimesCalculator:
 
         for day in range((self.end_date - self.start_date).days + 1):
             current_date = self.start_date + timedelta(days=day)
-            tz_name = self.tz_finder.timezone_at(lng=self.longitude, lat=self.latitude)
+            tz_name = self.tz_finder.timezone_at(
+                lng=self.longitude, lat=self.latitude)
             local_tz = timezone(tz_name)
-            utc_offset = local_tz.utcoffset(datetime.combine(current_date, time(12, 0))).total_seconds() / 3600
-            
-            prayer_conf = PrayerConf(self.longitude, self.latitude, utc_offset, fajr_isha_method, asr_fiqh)
+            utc_offset = local_tz.utcoffset(datetime.combine(
+                current_date, time(12, 0))).total_seconds() / 3600
+
+            prayer_conf = PrayerConf(
+                self.longitude, self.latitude, utc_offset, fajr_isha_method, asr_fiqh)
             prayer = Prayer(prayer_conf, current_date)
-            hijri = HijriDate.get_hijri(current_date, correction_val=correction_day)
+            hijri = HijriDate.get_hijri(
+                current_date, correction_val=correction_day)
 
             prayer_times = {
                 "Datum": current_date.strftime("%d-%m-%Y"),

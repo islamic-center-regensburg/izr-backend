@@ -4,6 +4,7 @@ from django.contrib import admin
 from django.contrib import admin
 from .models import (
     Blog,
+    CalculationMethod,
     ContentItem,
     Event,
     Gallery,
@@ -35,7 +36,8 @@ class HadithAdmin(admin.ModelAdmin):
 
 @admin.register(Token)
 class TokenAdmin(admin.ModelAdmin):
-    list_display = ("os", "token", "test2")  # Display these fields in the list view
+    # Display these fields in the list view
+    list_display = ("os", "token", "test2")
     search_fields = ("os", "token")  # Enable search by os and token fields
 
 
@@ -67,50 +69,70 @@ class PrayerConfigAdmin(admin.ModelAdmin):
 
 @admin.register(PrayerCalculationConfig)
 class PrayerCalculationConfigAdmin(admin.ModelAdmin):
+    # Fields to display in the list view
     list_display = (
+        "config_name",
+        "default_latitude",
+        "default_longitude",
         "isha_angle",
         "fajr_angle",
         "jumaa_time",
-        "tarawih_time",
-        "default_longitude",
-        "default_latitude",
-        "correction_day",
-        "ramadan",
     )
-    search_fields = (
-        "isha_angle",
-        "fajr_angle",
-        "jumaa_time",
-        "tarawih_time",
-        "default_longitude",
-        "default_latitude",
-        "correction_day",
-        "ramadan",
-    )  # Searchable fields
-    ordering = ("isha_angle",)  # Default ordering
+
+    # Fields to include in the edit form
     fieldsets = (
-        (
-            None,
-            {
-                "fields": (
-                    "isha_angle",
-                    "fajr_angle",
-                    "jumaa_time",
-                    "tarawih_time",
-                    "default_longitude",
-                    "default_latitude",
-                    "correction_day",
-                )
-            },
-        ),
+        ("General Configuration", {
+            "fields": (
+                "config_name",
+                "default_latitude",
+                "default_longitude",
+            ),
+        }),
+        ("Jumaa & Ramadan", {
+            "fields": (
+                "jumaa_time",
+                "tarawih_time",
+                "ramadan",
+                "correction_day",
+            ),
+        }),
+        ("Tuning Parameters", {
+            "fields": (
+                "imsak_tune",
+                "fajr_tune",
+                "sunrise_tune",
+                "dhuhr_tune",
+                "asr_tune",
+                "maghrib_tune",
+                "sunset_tune",
+                "isha_tune",
+                "midnight_tune",
+            ),
+        }),
+        ("Prayer Calculation Angles", {
+            "fields": (
+                "isha_angle",
+                "fajr_angle",
+                "calculation_type",
+            ),
+        }),
     )
+
+    # Prevent adding new instances (since only one instance is allowed)
+    def has_add_permission(self, request):
+        return False
+
+    # Prevent deleting the instance (since only one instance is allowed)
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 class ContentItemInline(admin.TabularInline):
     model = ContentItem
     extra = 1  # How many extra empty fields to display
     fields = ["content_type", "text", "image", "v_image"]
-    readonly_fields = ["order"]  # You might want to manually order in the admin
+    # You might want to manually order in the admin
+    readonly_fields = ["order"]
 
 
 @admin.register(Blog)
@@ -138,3 +160,22 @@ class GalleryImageInline(admin.TabularInline):
 class GalleryAdmin(admin.ModelAdmin):
     inlines = [GalleryImageInline]
     list_display = ("title", "created_at")
+
+
+@admin.register(CalculationMethod)
+class CalculationMethodAdmin(admin.ModelAdmin):
+    # Fields to display in the list view
+    list_display = ("name", "short_name", "method_id")
+
+    # Fields to include in the search bar
+    search_fields = ("name", "short_name", "method_id")
+
+    # Fields to filter by in the sidebar
+    list_filter = ("method_id",)
+
+    # Fields to display in the edit form
+    fieldsets = (
+        ("General Information", {
+            "fields": ("name", "short_name", "method_id"),
+        }),
+    )
