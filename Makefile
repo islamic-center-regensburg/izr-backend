@@ -4,7 +4,6 @@ remigrate:
 	python3 manage.py makemigrations --empty --name initial izr_products
 	python3 manage.py makemigrations --empty --name initial izr_school
 	python3 manage.py makemigrations --empty --name initial izr_staff
-	python3 manage.py migrate --fake-initial
 .PHONY: start
 
 start:
