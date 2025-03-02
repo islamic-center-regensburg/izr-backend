@@ -118,12 +118,6 @@ class PrayerCalculationConfig(models.Model):
     def __str__(self):
         return f"Prayer Times Calculations"
 
-    @classmethod
-    def get_solo_instance(cls):
-        """Retrieve the single instance of this model, or create it if it doesn't exist."""
-        obj, created = cls.objects.get_or_create(id=1)
-        return obj
-
     class Meta:
         verbose_name = "Prayer Times Calculations"
         verbose_name_plural = "Prayer Times Calculations"

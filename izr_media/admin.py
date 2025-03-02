@@ -118,14 +118,6 @@ class PrayerCalculationConfigAdmin(admin.ModelAdmin):
         }),
     )
 
-    # Prevent adding new instances (since only one instance is allowed)
-    def has_add_permission(self, request):
-        return False
-
-    # Prevent deleting the instance (since only one instance is allowed)
-    def has_delete_permission(self, request, obj=None):
-        return False
-
 
 class ContentItemInline(admin.TabularInline):
     model = ContentItem
