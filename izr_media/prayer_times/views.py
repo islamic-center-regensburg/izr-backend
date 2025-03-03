@@ -97,6 +97,10 @@ def get_today_prayer_times(request):
 
         # Fetch prayer times
         prayer_times = calculator.fetch_daily_prayer_times(today)
+        prayer_times["Jumaa"] = str(config.jumaa_time)[:5]
+
+        if config.ramadan == "on":
+            prayer_times["Tarawih"] = str(config.tarawih_time)[:5]
 
         # Return the response
         response = JsonResponse(prayer_times, safe=False)
