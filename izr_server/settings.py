@@ -17,12 +17,10 @@ import environ
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-env = environ.Env(
-    DEBUG=(bool, False)  # Define types and defaults
-)
+env = environ.Env(DEBUG=(bool, False))  # Define types and defaults
 
 # Automatically fetch environment variables (already loaded by Docker)
-DEBUG = env.bool('DEBUG', default=False)
+DEBUG = env.bool("DEBUG", default=False)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 
@@ -47,8 +45,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     MEDIA_URL = "https://izr-cloud.online/media/"
-    CSRF_TRUSTED_ORIGINS = [
-        "https://izr-cloud.online", "https://iz-regensburg.de"]
+    CSRF_TRUSTED_ORIGINS = ["https://izr-cloud.online", "https://iz-regensburg.de"]
     CORS_ALLOW_ALL_ORIGINS = True
 
 
@@ -75,7 +72,7 @@ INSTALLED_APPS = [
     "izr_products",
     "izr_media",
     "izr_staff",
-    "izr_school"
+    "izr_school",
 ]
 
 
@@ -118,7 +115,10 @@ WSGI_APPLICATION = "izr_server.wsgi.application"
 
 if not DEBUG:
     DATABASES = {
-        'default': env.db('DATABASE_URL', default='mysql://django_user:django_password@localhost:3306/django_db')
+        "default": env.db(
+            "DATABASE_URL",
+            default="mysql://django_user:django_password@localhost:3306/django_db",
+        )
     }
 else:
     DATABASES = {
@@ -202,36 +202,36 @@ JAZZMIN_SETTINGS = {
 
 
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {message}',
-            'style': '{',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {message}",
+            "style": "{",
         },
-        'simple': {
-            'format': '{levelname} {message}',
-            'style': '{',
-        },
-    },
-    'handlers': {
-        'console': {
-            'level': 'DEBUG',
-            'class': 'logging.StreamHandler',
-            'formatter': 'verbose',
-        },
-        'file': {
-            'level': 'ERROR',
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'logs', 'errors.log'),
-            'formatter': 'verbose',
+        "simple": {
+            "format": "{levelname} {message}",
+            "style": "{",
         },
     },
-    'loggers': {
-        'django': {
-            'handlers': ['console'] if DEBUG else ['file'],
-            'level': 'DEBUG' if DEBUG else 'ERROR',
-            'propagate': True,
+    "handlers": {
+        "console": {
+            "level": "DEBUG",
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+        "file": {
+            "level": "ERROR",
+            "class": "logging.FileHandler",
+            "filename": os.path.join(BASE_DIR, "logs", "errors.log"),
+            "formatter": "verbose",
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"] if DEBUG else ["file"],
+            "level": "DEBUG",
+            "propagate": True,
         },
     },
 }
