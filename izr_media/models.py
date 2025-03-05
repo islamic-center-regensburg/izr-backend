@@ -6,20 +6,64 @@ from datetime import time
 
 
 # Create your models here.
+from django.db import models
+
+
 class Event(models.Model):
-    title = models.CharField(max_length=255, blank=True, null=True)
-    title_ar = models.CharField(max_length=255, blank=True, null=True)
-    enabled = models.BooleanField(default=True)
-    flyer = models.ImageField(upload_to="izr_media/")
-    flyer_ar = models.ImageField(upload_to="izr_media/")
-    flyerTV = models.ImageField(upload_to="izr_media/")
-    subtitle = models.CharField(max_length=255, blank=True, null=True)
-    subtitle_ar = models.CharField(max_length=255, blank=True, null=True)
-    description = models.TextField()
-    description_ar = models.TextField()
+    # German (Required title & flyer)
+    title = models.CharField(
+        max_length=255, blank=False, null=False, verbose_name="Title (German)"
+    )
+    subtitle = models.CharField(
+        max_length=255, blank=True, default="", verbose_name="Subtitle (German)"
+    )
+    description = models.TextField(
+        default="", blank=True, verbose_name="Description (German)")
+    flyer = models.ImageField(
+        upload_to="izr_media/", blank=False, null=False, verbose_name="Flyer (German)"
+    )
+    flyerTV = models.ImageField(
+        upload_to="izr_media/", blank=True, null=True, verbose_name="Flyer TV (German)"
+    )
+
+    # Arabic (Optional)
+    title_ar = models.CharField(
+        max_length=255, blank=False, default="", verbose_name="Title (Arabic)"
+    )
+    subtitle_ar = models.CharField(
+        max_length=255, blank=True, default="", verbose_name="Subtitle (Arabic)"
+    )
+    description_ar = models.TextField(
+        default="", blank=True, verbose_name="Description (Arabic)")
+    flyer_ar = models.ImageField(
+        upload_to="izr_media/", blank=False, null=True, verbose_name="Flyer (Arabic)"
+    )
+    flyerTV_ar = models.ImageField(
+        upload_to="izr_media/", blank=True, null=True, verbose_name="Flyer TV (Arabic)"
+    )
+
+    # English (Optional)
+    title_en = models.CharField(
+        max_length=255, blank=False, default="", verbose_name="Title (English)"
+    )
+    subtitle_en = models.CharField(
+        max_length=255, blank=True, default="", verbose_name="Subtitle (English)"
+    )
+    description_en = models.TextField(
+        default="", blank=True, verbose_name="Description (English)")
+    flyer_en = models.ImageField(
+        upload_to="izr_media/", blank=False, null=True, verbose_name="Flyer (English)"
+    )
+    flyerTV_en = models.ImageField(
+        upload_to="izr_media/", blank=True, null=True, verbose_name="Flyer TV (English)"
+    )
+
+    more_info = models.URLField(blank=True, null=True)
+
+    enabled = models.BooleanField(default=True, verbose_name="Event Enabled")
 
     def __str__(self):
-        return self.title or "Unnamed Event"
+        return self.title or self.title_en or self.title_ar or "Unnamed Event"
 
 
 class Hadith(models.Model):
