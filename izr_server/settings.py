@@ -45,7 +45,8 @@ MEDIA_ROOT = BASE_DIR / "media"
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     MEDIA_URL = "https://izr-cloud.online/media/"
-    CSRF_TRUSTED_ORIGINS = ["https://izr-cloud.online", "https://iz-regensburg.de"]
+    CSRF_TRUSTED_ORIGINS = [
+        "https://izr-cloud.online", "https://iz-regensburg.de"]
     CORS_ALLOW_ALL_ORIGINS = True
 
 
@@ -221,16 +222,17 @@ LOGGING = {
             "formatter": "verbose",
         },
         "file": {
-            "level": "ERROR",
+            "level": "DEBUG",  # Capture all levels in production
             "class": "logging.FileHandler",
-            "filename": os.path.join(BASE_DIR, "logs", "errors.log"),
+            "filename": os.path.join(BASE_DIR, "logs", "logs.log"),
             "formatter": "verbose",
         },
     },
     "loggers": {
         "django": {
+            # Console in debug, file in production
             "handlers": ["console"] if DEBUG else ["file"],
-            "level": "DEBUG",
+            "level": "INFO",
             "propagate": True,
         },
     },
