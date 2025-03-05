@@ -19,13 +19,20 @@ class EventSerializer(serializers.ModelSerializer):
         fields = [
             "title",
             "title_ar",
+            "title_en",
             "flyer",
             "flyer_ar",
+            "flyer_en",
             "flyerTV",
+            "flyerTV_ar",
+            "flyerTV_en",
             "subtitle",
             "subtitle_ar",
+            "subtitle_en",
             "description",
             "description_ar",
+            "description_en",
+            "more_info",
         ]
 
 
@@ -65,13 +72,11 @@ class ContentItemSerializer(serializers.ModelSerializer):
 
 
 class BlogSerializer(serializers.ModelSerializer):
-    content_items = ContentItemSerializer(
-        many=True)  # Serialize related content items
+    content_items = ContentItemSerializer(many=True)  # Serialize related content items
 
     class Meta:
         model = Blog
-        fields = ["id", "title", "author",
-                  "created_at", "updated_at", "content_items"]
+        fields = ["id", "title", "author", "created_at", "updated_at", "content_items"]
 
 
 class StatementSerializer(serializers.ModelSerializer):
@@ -93,8 +98,7 @@ class GalleryImageSerializer(serializers.ModelSerializer):
 
 
 class GallerySerializer(serializers.ModelSerializer):
-    images = GalleryImageSerializer(
-        many=True, read_only=True)  # Include related images
+    images = GalleryImageSerializer(many=True, read_only=True)  # Include related images
 
     class Meta:
         model = Gallery
