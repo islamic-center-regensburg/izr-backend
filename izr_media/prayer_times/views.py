@@ -1,4 +1,3 @@
-
 from .old_calculation import OldPrayerTimesCalculator
 from .calculation import PrayerTimesCalculator
 import json
@@ -30,18 +29,29 @@ def old_calculation(request):
                 end_date = f"{end_date["y"]}-{end_date["m"]}-{end_date["d"]}"
 
             if city_name.lower() == "regensburg":
-                lat = PrayerCalculationConfig.objects.latest(
-                    "id").default_latitude if lat is None else lat
-                lng = PrayerCalculationConfig.objects.latest(
-                    "id").default_longitude if lng is None else lng
+                lat = (
+                    PrayerCalculationConfig.objects.latest("id").default_latitude
+                    if lat is None
+                    else lat
+                )
+                lng = (
+                    PrayerCalculationConfig.objects.latest("id").default_longitude
+                    if lng is None
+                    else lng
+                )
 
             if lat is None or lng is None:
-                return JsonResponse({"error": "Latitude and Longitude must be provided"}, status=400)
+                return JsonResponse(
+                    {"error": "Latitude and Longitude must be provided"}, status=400
+                )
             if start_date is None or end_date is None:
-                return JsonResponse({"error": "Start date and End date must be provided"}, status=400)
+                return JsonResponse(
+                    {"error": "Start date and End date must be provided"}, status=400
+                )
 
             calculator = OldPrayerTimesCalculator(
-                start_date, end_date, lng, lat, method)
+                start_date, end_date, lng, lat, method
+            )
             prayer_times = calculator.get_prayer_times()
 
             return JsonResponse(prayer_times, safe=False)
@@ -80,7 +90,7 @@ def get_today_prayer_times(request):
         calculator = PrayerTimesCalculator(
             latitude=lat,
             longitude=lng,
-            calculation_method="custom",  # Or fetch this from config if needed
+            calculation_method="izr",  # Or fetch this from config if needed
             fajr_angle=fajr_angle,
             isha_angle=isha_angle,
             tune=True,  # Enable tuning
@@ -120,14 +130,14 @@ def get_prayer_times(request):
             lat = data.get("lat", config.default_latitude)
             lng = data.get("lng", config.default_longitude)
             # Default method is Qatar (ID: 10)
-            method = data.get("method", "custom")
+            method = data.get("method", "izr")
             period = data.get("period", "monthly")  # monthlyor annual
             # Month or year, depending on the period
             value = data.get("value", None)
             hijri = data.get("hijri", False)  # Whether to use Hijri calendar
 
             # If method is 99 (custom), retrieve angles and tuning parameters
-            if method == "custom":
+            if method == "izr":
                 angles = get_regensburg_angles()
                 fajr_angle = angles["fajr_angle"]
                 isha_angle = angles["isha_angle"]
@@ -151,9 +161,16 @@ def get_prayer_times(request):
 
             # Validate required parameters
             if lat is None or lng is None:
-                return JsonResponse({"error": "Latitude and Longitude must be provided"}, status=400)
+                return JsonResponse(
+                    {"error": "Latitude and Longitude must be provided"}, status=400
+                )
             if period != "annual" and value is None:
-                return JsonResponse({"error": "Value (month/year) must be provided for non-annual periods"}, status=400)
+                return JsonResponse(
+                    {
+                        "error": "Value (month/year) must be provided for non-annual periods"
+                    },
+                    status=400,
+                )
 
             # Initialize the calculator
             calculator = PrayerTimesCalculator(
@@ -174,13 +191,18 @@ def get_prayer_times(request):
                     year = Gregorian(year, 1, 1).to_hijri().year
                 month = value
                 prayer_times = calculator.fetch_monthly_prayer_times(
-                    month=month, year=year, hijri=hijri)
+                    month=month, year=year, hijri=hijri
+                )
             elif period == "annual":
                 year = value
                 prayer_times = calculator.fetch_annual_prayer_times(
-                    year=year, hijri=hijri)
+                    year=year, hijri=hijri
+                )
             else:
-                return JsonResponse({"error": "Invalid period. Must be 'monthly' or 'annual'."}, status=400)
+                return JsonResponse(
+                    {"error": "Invalid period. Must be 'monthly' or 'annual'."},
+                    status=400,
+                )
 
             return JsonResponse(prayer_times, safe=False)
 
