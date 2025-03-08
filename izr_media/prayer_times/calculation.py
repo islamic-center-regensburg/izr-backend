@@ -3,6 +3,7 @@
 from datetime import datetime
 import json
 from typing import Any, Final, List
+import unicodedata
 
 import requests
 
@@ -58,7 +59,8 @@ CALCULATION_METHODS: Final = {
 
 SCHOOLS: Final = {"shafi": 0, "hanafi": 1}
 MIDNIGHT_MODES: Final = {"standard": 0, "jafari": 1}
-LAT_ADJ_METHODS: Final = {"middle of the night": 1, "one seventh": 2, "angle based": 3}
+LAT_ADJ_METHODS: Final = {"middle of the night": 1,
+                          "one seventh": 2, "angle based": 3}
 
 
 class PrayerTimesCalculator:
@@ -89,7 +91,8 @@ class PrayerTimesCalculator:
         iso8601=False,
     ) -> None:
         if calculation_method.lower() not in CALCULATION_METHODS:
-            raise CalculationMethodError(calculation_method, list(CALCULATION_METHODS))
+            raise CalculationMethodError(
+                calculation_method, list(CALCULATION_METHODS))
 
         if school and school.lower() not in SCHOOLS:
             raise CalculationMethodError(school, list(SCHOOLS))
@@ -108,7 +111,8 @@ class PrayerTimesCalculator:
         self._latitude = latitude
         self._longitude = longitude
 
-        self._calculation_method = CALCULATION_METHODS[calculation_method.lower()]
+        self._calculation_method = CALCULATION_METHODS[calculation_method.lower(
+        )]
         self._method_settings: str | None = None
         if self._calculation_method == 99:
             self._method_settings = self.parse_method_settings(
@@ -117,7 +121,8 @@ class PrayerTimesCalculator:
 
         self._school = SCHOOLS.get(school.lower())
         self._midnight_mode = MIDNIGHT_MODES.get(midnightMode.lower())
-        self._lat_adj_method = LAT_ADJ_METHODS.get(latitudeAdjustmentMethod.lower())
+        self._lat_adj_method = LAT_ADJ_METHODS.get(
+            latitudeAdjustmentMethod.lower())
 
         if tune is True:
             tunes = [
@@ -185,6 +190,9 @@ class PrayerTimesCalculator:
         return params
 
     def _format_response(self, data: dict) -> dict:
+        def remove_diacritics(text):
+            return ''.join(c for c in unicodedata.normalize('NFKD', text) if not unicodedata.combining(c))
+
         """Format the API response to return prayer times in the desired format."""
         hijri = str(data["date"]["hijri"]["date"]).split("-")
         hijri_ar = (
@@ -196,7 +204,7 @@ class PrayerTimesCalculator:
         return {
             "Datum": data["date"]["gregorian"]["date"],
             "Hijri_ar": hijri_ar,
-            "Hijri": hijri_en,
+            "Hijri": remove_diacritics(hijri_en),
             "Fajr": data["timings"]["Fajr"].split(" ")[0],
             "Shuruq": data["timings"]["Sunrise"].split(" ")[0],
             "Dhuhr": data["timings"]["Dhuhr"].split(" ")[0],
@@ -210,7 +218,8 @@ class PrayerTimesCalculator:
         try:
             date_parsed = datetime.strptime(date, "%Y-%m-%d")
         except ValueError as err:
-            raise ValueError("Invalid date string. Must be 'yyyy-mm-dd'") from err
+            raise ValueError(
+                "Invalid date string. Must be 'yyyy-mm-dd'") from err
 
         self._date = date_parsed.strftime("%d-%m-%Y")
         url = f"{API_URL}/timings/{self._date}"
@@ -219,7 +228,8 @@ class PrayerTimesCalculator:
         response = requests.get(url, params=params, timeout=10)
 
         if not response.status_code == 200:
-            raise InvalidResponseError(f"Unable to retrieve prayer times. URL: {url}")
+            raise InvalidResponseError(
+                f"Unable to retrieve prayer times. URL: {url}")
 
         return self._format_response(response.json()["data"])
 
