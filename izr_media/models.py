@@ -88,14 +88,14 @@ class Token(models.Model):
 
 class CalculationMethod(models.Model):
     # Full name of the calculation method
-    name = models.CharField(max_length=100, unique=True)
-    # Short name (e.g., "jafari")
-    short_name = models.CharField(max_length=50, unique=True)
-    # ID of the calculation method
-    method_id = models.IntegerField(unique=True)
+    name = models.CharField(max_length=100, unique=True, default="")
+    name_de = models.CharField(max_length=100, unique=True, default="")
+    name_ar = models.CharField(max_length=100, unique=True, default="")
+
+    short_name = models.CharField(max_length=50, unique=True, default="")
 
     def __str__(self):
-        return f"{self.name} (ID: {self.method_id})"
+        return f"{self.name}"
 
     class Meta:
         verbose_name = "Calculation Method"

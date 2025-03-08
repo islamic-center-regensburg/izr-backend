@@ -157,17 +157,14 @@ class GalleryAdmin(admin.ModelAdmin):
 @admin.register(CalculationMethod)
 class CalculationMethodAdmin(admin.ModelAdmin):
     # Fields to display in the list view
-    list_display = ("name", "short_name", "method_id")
+    list_display = ("name", "short_name")
 
     # Fields to include in the search bar
-    search_fields = ("name", "short_name", "method_id")
-
-    # Fields to filter by in the sidebar
-    list_filter = ("method_id",)
+    search_fields = ("name", "short_name")
 
     # Fields to display in the edit form
     fieldsets = (
         ("General Information", {
-            "fields": ("name", "short_name", "method_id"),
+            "fields": ("name", "name_ar", "name_de", "short_name"),
         }),
     )

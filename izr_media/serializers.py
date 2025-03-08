@@ -72,11 +72,13 @@ class ContentItemSerializer(serializers.ModelSerializer):
 
 
 class BlogSerializer(serializers.ModelSerializer):
-    content_items = ContentItemSerializer(many=True)  # Serialize related content items
+    content_items = ContentItemSerializer(
+        many=True)  # Serialize related content items
 
     class Meta:
         model = Blog
-        fields = ["id", "title", "author", "created_at", "updated_at", "content_items"]
+        fields = ["id", "title", "author",
+                  "created_at", "updated_at", "content_items"]
 
 
 class StatementSerializer(serializers.ModelSerializer):
@@ -98,7 +100,8 @@ class GalleryImageSerializer(serializers.ModelSerializer):
 
 
 class GallerySerializer(serializers.ModelSerializer):
-    images = GalleryImageSerializer(many=True, read_only=True)  # Include related images
+    images = GalleryImageSerializer(
+        many=True, read_only=True)  # Include related images
 
     class Meta:
         model = Gallery
@@ -114,4 +117,4 @@ class GallerySerializer(serializers.ModelSerializer):
 class CalculationMethodSerializer(serializers.ModelSerializer):
     class Meta:
         model = CalculationMethod
-        fields = ("name", "short_name", "method_id")
+        fields = ("name", "name_de", "name_ar", "short_name")
