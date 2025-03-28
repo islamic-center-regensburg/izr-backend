@@ -41,15 +41,15 @@ class EventViewSet(generics.ListAPIView):
     serializer_class = EventSerializer
 
     def get_queryset(self):
-        # Only return events where enabled is True
-        return Event.objects.filter(enabled=True)
+        # Only return events where enabled is True, ordered in reverse
+        return Event.objects.filter(enabled=True).order_by("-id")  # Reverse order by ID
 
     def list(self, request, *args, **kwargs):
         # Call the parent method to get the default response
         response = super().list(request, *args, **kwargs)
 
-        # Modify the response data to wrap it in a custom key
-        return Response({"events": response.data})
+        # Reverse the response data list before returning
+        return Response({"events": list(reversed(response.data))})
 
 
 class HadithDetailView(generics.RetrieveAPIView):
@@ -72,13 +72,11 @@ class TokenListCreateView(generics.ListCreateAPIView):
 
     def get(self, request, *args, **kwargs):
         tokens = self.get_queryset()  # Retrieve all tokens
-        serializer = self.get_serializer(
-            tokens, many=True)  # Serialize the queryset
+        serializer = self.get_serializer(tokens, many=True)  # Serialize the queryset
         return Response(serializer.data)
 
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(
-            data=request.data)  # Deserialize input data
+        serializer = self.get_serializer(data=request.data)  # Deserialize input data
         if serializer.is_valid():  # Validate the input data
             token = serializer.save()  # Create a new token instance
             return Response(
@@ -147,18 +145,21 @@ def send_email_post(request):
 @csrf_exempt
 def prayer_times(request):
     from .prayer_times.views import get_prayer_times
+
     return get_prayer_times(request)
 
 
 @csrf_exempt
 def today_prayer_times(request):
     from .prayer_times.views import get_today_prayer_times
+
     return get_today_prayer_times(request)
 
 
 @csrf_exempt
 def old_get_prayer_times(request):
     from .prayer_times.views import old_calculation
+
     return old_calculation(request=request)
 
 
