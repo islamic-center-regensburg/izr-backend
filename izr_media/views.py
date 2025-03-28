@@ -42,14 +42,15 @@ class EventViewSet(generics.ListAPIView):
 
     def get_queryset(self):
         # Only return events where enabled is True, ordered in reverse
-        return Event.objects.filter(enabled=True).order_by("-id")  # Reverse order by ID
+        # Reverse order by ID
+        return Event.objects.filter(enabled=True).order_by("-id")
 
     def list(self, request, *args, **kwargs):
         # Call the parent method to get the default response
         response = super().list(request, *args, **kwargs)
 
         # Reverse the response data list before returning
-        return Response({"events": list(reversed(response.data))})
+        return Response({"events": list(response.data)})
 
 
 class HadithDetailView(generics.RetrieveAPIView):
@@ -72,11 +73,13 @@ class TokenListCreateView(generics.ListCreateAPIView):
 
     def get(self, request, *args, **kwargs):
         tokens = self.get_queryset()  # Retrieve all tokens
-        serializer = self.get_serializer(tokens, many=True)  # Serialize the queryset
+        serializer = self.get_serializer(
+            tokens, many=True)  # Serialize the queryset
         return Response(serializer.data)
 
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)  # Deserialize input data
+        serializer = self.get_serializer(
+            data=request.data)  # Deserialize input data
         if serializer.is_valid():  # Validate the input data
             token = serializer.save()  # Create a new token instance
             return Response(
