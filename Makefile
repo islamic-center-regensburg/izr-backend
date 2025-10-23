@@ -8,5 +8,6 @@ remigrate:
 
 start:
 	python manage.py migrate --noinput
+	./entrypoint.sh
 	python manage.py collectstatic --noinput
 	gunicorn izr_server.wsgi:application --bind 0.0.0.0:8000

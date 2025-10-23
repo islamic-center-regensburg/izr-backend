@@ -17,6 +17,9 @@ RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 # Copy the entire Django project to the container
 COPY . /app/
 
+COPY ./entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
 EXPOSE 8000
 
 CMD [ "echo", "'Backend Build' Done !" ]

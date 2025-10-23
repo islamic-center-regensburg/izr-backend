@@ -1,0 +1,9 @@
+### Calculate Prayer Times (POST)
+POST http://localhost:8000/prayer-times
+Content-Type: application/json
+
+{
+  "city_name": "Regensburg",
+  "value": 2025,
+  "period": "annual"
+}
