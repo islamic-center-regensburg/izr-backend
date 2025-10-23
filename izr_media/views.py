@@ -93,6 +93,15 @@ class TokenListCreateView(generics.ListCreateAPIView):
 class PrayerConfigView(generics.ListAPIView):
     queryset = PrayerConfig.objects.all()
     serializer_class = PrayerConfigSerializer
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        # 👇 After saving, refresh Redis
+        redis_client = settings.REDIS_CLIENT
+        pattern = "prayer_times:regensburg:*:static"
+        keys = redis_client.keys(pattern)
+
+        for key in keys:
+            redis_client.delete(key)
 
 
 class StatementView(generics.ListAPIView):
@@ -162,7 +171,6 @@ def today_prayer_times(request):
 @csrf_exempt
 def old_get_prayer_times(request):
     from .prayer_times.views import old_calculation
-
     return old_calculation(request=request)
 
 

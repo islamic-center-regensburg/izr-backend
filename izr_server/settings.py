@@ -14,10 +14,14 @@ import os
 from pathlib import Path
 from corsheaders.defaults import default_headers
 import environ
+import redis
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
 env = environ.Env(DEBUG=(bool, False))  # Define types and defaults
+
+environ.Env.read_env(BASE_DIR / ".env")
 
 # Automatically fetch environment variables (already loaded by Docker)
 DEBUG = env.bool("DEBUG", default=False)
@@ -28,7 +32,7 @@ DEBUG = env.bool("DEBUG", default=False)
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-n%1hm%k)$$pwxp6$@$ag)jms9nsdizh++kz_nr94qaxj-ye@8j"
+SECRET_KEY = env.str("SECRET_KEY", "mysecrete")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 
@@ -128,6 +132,18 @@ else:
             "NAME": BASE_DIR / "db.sqlite3",
         }
     }
+    
+REDIS_HOST = env.str("REDIS_HOST", "localhost")
+REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
+REDIS_DB = int(os.getenv("REDIS_DB", 0))
+
+# Create a reusable Redis connection
+REDIS_CLIENT = redis.StrictRedis(
+    host=REDIS_HOST,
+    port=REDIS_PORT,
+    db=REDIS_DB,
+    decode_responses=True  # ensures JSON/string encoding works smoothly
+)
 
 
 # Password validation
@@ -220,13 +236,7 @@ LOGGING = {
             "level": "DEBUG",
             "class": "logging.StreamHandler",
             "formatter": "verbose",
-        },
-        "file": {
-            "level": "DEBUG",  # Capture all levels in production
-            "class": "logging.FileHandler",
-            "filename": os.path.join(BASE_DIR, "logs", "logs.log"),
-            "formatter": "verbose",
-        },
+        }
     },
     "loggers": {
         "django": {

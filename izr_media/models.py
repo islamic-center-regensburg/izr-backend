@@ -146,10 +146,10 @@ class PrayerCalculationConfig(models.Model):
     midnight_tune = models.IntegerField(
         default=0)  # Tuning for Midnight in minutes
     isha_angle = models.FloatField(
-        validators=[MinValueValidator(12), MaxValueValidator(18)], default=18.0
+        validators=[MinValueValidator(12), MaxValueValidator(19)], default=18.0
     )  # Angle for Isha prayer calculation
     fajr_angle = models.FloatField(
-        validators=[MinValueValidator(12), MaxValueValidator(18)], default=18.0
+        validators=[MinValueValidator(12), MaxValueValidator(19)], default=18.0
     )  # Angle for Fajr prayer calculation
 
     def save(self, *args, **kwargs):

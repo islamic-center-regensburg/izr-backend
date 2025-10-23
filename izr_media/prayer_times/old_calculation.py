@@ -76,8 +76,8 @@ def round_time_to_minute(time):
 
 class OldPrayerTimesCalculator:
     def __init__(self, start_date, end_date, longitude, latitude, method=10):
-        self.start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
-        self.end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
+        self.start_date = datetime.strptime(f"{datetime.today().year}-01-31","%Y-%m-%d").date()
+        self.end_date = datetime.strptime(f"{datetime.today().year}-12-31","%Y-%m-%d").date()
         self.longitude = longitude
         self.latitude = latitude
         self.tz_finder = TimezoneFinder()

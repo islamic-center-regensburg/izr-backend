@@ -1,3 +1,6 @@
+from pathlib import Path
+from django.conf import settings
+import numpy as np
 from .old_calculation import OldPrayerTimesCalculator
 from .calculation import PrayerTimesCalculator
 import json
@@ -5,11 +8,11 @@ from django.http import JsonResponse
 from ..models import (
     PrayerCalculationConfig,
 )
-
+import redis
+import pandas as pd
 from datetime import datetime
 from .angles import get_regensburg_angles
 from hijri_converter import Hijri, Gregorian
-
 
 def old_calculation(request):
     if request.method == "POST":
@@ -18,42 +21,108 @@ def old_calculation(request):
 
             print(data)
 
+            config = PrayerCalculationConfig.objects.latest("id")
+            calculation_type = config.calculation_type
             city_name = data.get("city_name", "Regensburg")
             lat = data.get("lat", None)
             lng = data.get("lng", None)
-            start_date = data.get("start_date", None)
-            end_date = data.get("end_date", None)
-            method = data.get("method", 10)
-            if end_date and start_date:
-                start_date = f"{start_date["y"]}-{start_date["m"]}-{start_date["d"]}"
-                end_date = f"{end_date["y"]}-{end_date["m"]}-{end_date["d"]}"
 
             if city_name.lower() == "regensburg":
-                lat = (
-                    PrayerCalculationConfig.objects.latest("id").default_latitude
-                    if lat is None
-                    else lat
-                )
-                lng = (
-                    PrayerCalculationConfig.objects.latest("id").default_longitude
-                    if lng is None
-                    else lng
-                )
+                method = 'izr'
+                lat = config.default_latitude
+                lng = config.default_longitude
+                fajr_angle = config.fajr_angle
+                isha_angle = config.isha_angle
+                tune = True
+                tuning_params = {
+                    "imsak_tune": config.imsak_tune,
+                    "fajr_tune": config.fajr_tune,
+                    "sunrise_tune": config.sunrise_tune,
+                    "dhuhr_tune": config.dhuhr_tune,
+                    "asr_tune": config.asr_tune,
+                    "maghrib_tune": config.maghrib_tune,
+                    "sunset_tune": config.sunset_tune,
+                    "isha_tune": config.isha_tune,
+                    "midnight_tune": config.midnight_tune,
+                }
+            else:
+                fajr_angle = None
+                isha_angle = None
+                tune = False
+                tuning_params = {}
+                method = "mwl"
 
+            # Validate required parameters
             if lat is None or lng is None:
                 return JsonResponse(
                     {"error": "Latitude and Longitude must be provided"}, status=400
                 )
-            if start_date is None or end_date is None:
-                return JsonResponse(
-                    {"error": "Start date and End date must be provided"}, status=400
-                )
-
-            calculator = OldPrayerTimesCalculator(
-                start_date, end_date, lng, lat, method
+            # Initialize the calculator
+            calculator = PrayerTimesCalculator(
+                latitude=lat,
+                longitude=lng,
+                calculation_method=method,
+                # Only used for monthly/annual calculations
+                fajr_angle=fajr_angle,
+                isha_angle=isha_angle,
+                tune=tune,
+                **tuning_params,
             )
-            prayer_times = calculator.get_prayer_times()
 
+            current_year = datetime.now().year
+            print("current year :",current_year)
+            redis_client = settings.REDIS_CLIENT
+            redis_key = f"prayer_times:{city_name.lower()}:{current_year}:{calculation_type}"
+
+            
+            cached_data = redis_client.get(redis_key)
+            if cached_data:
+                data = json.loads(cached_data)
+                return JsonResponse(data, safe=False)
+
+            prayer_times = calculator.fetch_annual_prayer_times(
+                year=current_year, hijri=False
+            )
+            
+            # --- 📘 Read CSV data for smoothed Fajr/Isha for Regensburg ---
+            if city_name.lower() == 'regensburg' and  calculation_type != 'static':
+                csv_path = Path(__file__).parent / "prayer-times-isha-fajr-fourier-fit.csv"
+                prayer_df = pd.DataFrame(prayer_times)
+                prayer_df["Day"] = np.arange(1, len(prayer_df) + 1)
+                csv_df = pd.read_csv(csv_path,delimiter=";")
+                print(csv_df.columns.tolist())
+                print(csv_df.head(1))
+                if {"Day", "Fajr", "Isha"} <= set(csv_df.columns):
+                    print("here changin columns")
+
+                    merged = prayer_df.merge(
+                        csv_df[["Day", "Fajr", "Isha"]],
+                        on="Day",
+                        how="left",
+                        suffixes=('', '_csv')
+                    )
+
+                    # Replace Fajr and Isha with CSV values when available
+                    merged["Fajr"] = merged["Fajr_csv"].fillna(merged["Fajr"])
+                    merged["Isha"] = merged["Isha_csv"].fillna(merged["Isha"])
+
+                    # Drop helper columns
+                    merged = merged.drop(columns=["Fajr_csv", "Isha_csv"])
+
+                    prayer_times = merged.to_dict(orient="records")
+
+            # --- 🧠 Store to Redis until end of the year ---
+            end_of_year = datetime(current_year, 12, 31, 23, 59, 59)
+            seconds_to_expire = int((end_of_year - datetime.now()).total_seconds())
+            redis_client.setex(redis_key, seconds_to_expire, json.dumps(prayer_times))
+            print(f"✅ Cached prayer times in Redis (expires end of {current_year})")
+            
+            cached_data = redis_client.get(redis_key)
+            
+            if cached_data:
+                print("✅ Returning cached prayer times from Redis")
+                return JsonResponse(json.loads(cached_data), safe=False)
+            
             return JsonResponse(prayer_times, safe=False)
 
         except KeyError as e:

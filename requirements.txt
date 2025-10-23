@@ -27,3 +27,5 @@ smmap==5.0.1
 sqlparse==0.5.1
 timezonefinder==6.5.3
 urllib3==2.3.0
+redis
+pandas

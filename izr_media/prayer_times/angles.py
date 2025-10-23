@@ -8,5 +8,3 @@ def get_regensburg_angles():
     print(config.calculation_type)
     if config.calculation_type == "static":
         return {"fajr_angle": config.fajr_angle, "isha_angle": config.isha_angle}
-    else:
-        print("get_regensburg_angles : DYNAMIC calculation not implemented yet! ")
